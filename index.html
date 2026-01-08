@@ -1,0 +1,5062 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>身份证集成工具</title>
+    <!-- Tailwind CSS v3 -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Font Awesome -->
+    <link href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#3b82f6',
+                        secondary: '#64748b',
+                        success: '#22c55e',
+                        danger: '#ef4444',
+                        warning: '#f59e0b',
+                        info: '#0ea5e9',
+                        light: '#f8fafc',
+                        dark: '#1e293b'
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        mono: ['Consolas', 'Monaco', 'monospace']
+                    },
+                    boxShadow: {
+                        'card': '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
+                        'card-hover': '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
+                    }
+                }
+            }
+        }
+    </script>
+    <style type="text/tailwindcss">
+        @layer utilities {
+            .glass-effect {
+                background: rgba(255, 255, 255, 0.7);
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+            }
+            .tab-active {
+                @apply border-b-2 border-primary text-primary;
+            }
+            .btn {
+                @apply px-4 py-2 rounded-md transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-opacity-50;
+            }
+            .btn-primary {
+                @apply bg-primary text-white hover:bg-primary/90 focus:ring-primary/50;
+            }
+            .btn-secondary {
+                @apply bg-secondary text-white hover:bg-secondary/90 focus:ring-secondary/50;
+            }
+            .btn-outline {
+                @apply border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-200;
+            }
+            .input-field {
+                @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
+            }
+            .card {
+                @apply bg-white rounded-lg shadow-card transition-all duration-300 hover:shadow-card-hover;
+            }
+            .scrollbar-thin {
+                scrollbar-width: thin;
+                scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
+            }
+            .scrollbar-thin::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+            .scrollbar-thin::-webkit-scrollbar-track {
+                background: transparent;
+            }
+            .scrollbar-thin::-webkit-scrollbar-thumb {
+                background-color: rgba(156, 163, 175, 0.5);
+                border-radius: 20px;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
+    <div class="container mx-auto px-4 py-8 max-w-5xl">
+        <!-- 头部 -->
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-gray-800 mb-2">身份证集成工具</h1>
+            <p class="text-gray-600">身份证集成一体工具（非GAJ联网）</p>
+        </header>
+
+        <!-- 主内容区 -->
+        <main class="card p-6 mb-6">
+            <!-- 选项卡导航 -->
+            <div class="border-b border-gray-200 mb-6">
+                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabNav" role="tablist">
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 tab-active" id="search-tab" data-tab="search" type="button" role="tab" aria-controls="search" aria-selected="true">
+                            <i class="fa fa-search mr-2"></i>搜索顺序码
+                        </button>
+                    </li>
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 text-gray-500 hover:text-gray-700" id="calculate-tab" data-tab="calculate" type="button" role="tab" aria-controls="calculate" aria-selected="false">
+                            <i class="fa fa-calculator mr-2"></i>计算校验码
+                        </button>
+                    </li>
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 text-gray-500 hover:text-gray-700" id="verify-tab" data-tab="verify" type="button" role="tab" aria-controls="verify" aria-selected="false">
+                            <i class="fa fa-check-circle mr-2"></i>身份证查验
+                        </button>
+                    </li>
+                    <li class="mr-2" role="presentation">
+                        <button class="inline-block p-4 text-gray-500 hover:text-gray-700" id="generate-tab" data-tab="generate" type="button" role="tab" aria-controls="generate" aria-selected="false">
+                            <i class="fa fa-random mr-2"></i>生成身份证
+                        </button>
+                    </li>
+                </ul>
+            </div>
+
+            <!-- 选项卡内容 -->
+            <div id="tabContent">
+                <!-- 搜索顺序码选项卡 -->
+                <div id="search" class="tab-pane active">
+                    <div class="card p-6 mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">搜索可能的顺序码</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <!-- 前14位输入 -->
+                            <div class="mb-4">
+                                <label for="first14" class="block text-sm font-medium text-gray-700 mb-1">前14位</label>
+                                <div class="relative">
+                                    <input type="text" id="first14" class="input-field" placeholder="请输入前14位数字" maxlength="14">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-400 text-sm">地址码6位 + 出生日期8位</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <!-- 校验码输入 -->
+                            <div class="mb-4">
+                                <label for="checkDigit" class="block text-sm font-medium text-gray-700 mb-1">校验码</label>
+                                <div class="relative">
+                                    <input type="text" id="checkDigit" class="input-field" placeholder="0-9或X" maxlength="1">
+                                    <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                                        <span class="text-gray-400 text-sm">0-9 或 X</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 性别选择 -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">性别</label>
+                            <div class="flex space-x-4">
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="gender" value="" class="form-radio text-primary" checked>
+                                    <span class="ml-2">不限</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="gender" value="M" class="form-radio text-primary">
+                                    <span class="ml-2">男性</span>
+                                </label>
+                                <label class="inline-flex items-center">
+                                    <input type="radio" name="gender" value="F" class="form-radio text-primary">
+                                    <span class="ml-2">女性</span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <!-- 按钮组 -->
+                        <div class="flex flex-wrap gap-3">
+                            <button id="searchBtn" class="btn btn-primary">
+                                <i class="fa fa-search mr-2"></i>开始搜索
+                            </button>
+                            <button id="clearSearchBtn" class="btn btn-outline">
+                                <i class="fa fa-trash mr-2"></i>清空
+                            </button>
+                            <button id="copySearchBtn" class="btn btn-secondary">
+                                <i class="fa fa-copy mr-2"></i>复制结果
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 结果显示区域 -->
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">搜索结果</h3>
+                            <div id="searchStats" class="text-sm text-gray-600"></div>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-md p-4 mb-4">
+                            <pre id="searchConditions" class="text-sm text-gray-700 font-mono whitespace-pre-wrap"></pre>
+                        </div>
+                        
+                        <div class="relative">
+                            <div id="searchResults" class="h-64 overflow-y-auto scrollbar-thin bg-gray-50 rounded-md p-4 font-mono text-sm whitespace-pre-wrap"></div>
+                            <div id="searchResultsLoading" class="hidden absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 rounded-md">
+                                <div class="flex flex-col items-center">
+                                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+                                    <p class="mt-2 text-gray-600">正在搜索...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 计算校验码选项卡 -->
+                <div id="calculate" class="tab-pane hidden">
+                    <div class="card p-6 mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">计算校验码</h2>
+                        
+                        <div class="mb-6">
+                            <label for="id17" class="block text-sm font-medium text-gray-700 mb-1">身份证前17位</label>
+                            <div class="flex flex-wrap gap-3">
+                                <input type="text" id="id17" class="input-field flex-grow" placeholder="请输入前17位数字" maxlength="17">
+                                <button id="calculateBtn" class="btn btn-primary">
+                                    <i class="fa fa-calculator mr-2"></i>计算
+                                </button>
+                                <button id="clearCalculateBtn" class="btn btn-outline">
+                                    <i class="fa fa-trash mr-2"></i>清空
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 计算结果 -->
+                        <div id="calculationResult" class="hidden">
+                            <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <i class="fa fa-check-circle text-green-500 text-xl"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-lg font-medium text-green-800">计算完成</h3>
+                                        <div class="mt-2">
+                                            <p class="text-green-700">校验码为: <span id="checkDigitResult" class="font-bold text-xl"></span></p>
+                                            <p class="mt-2 text-gray-700">完整身份证号: <span id="fullIdResult" class="font-mono font-bold"></span></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 初始提示 -->
+                        <div id="calculationPrompt" class="flex flex-col items-center justify-center py-12 text-center">
+                            <div class="text-gray-400 mb-4">
+                                <i class="fa fa-id-card-o text-5xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-2">请输入身份证前17位</h3>
+                            <p class="text-gray-500 max-w-md">输入后点击"计算"按钮，系统将为您计算校验码</p>
+                        </div>
+                        
+                        <!-- 加载状态 -->
+                        <div id="calculationLoading" class="hidden flex flex-col items-center justify-center py-12">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                            <p class="text-gray-600">正在计算...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 身份证查验选项卡 -->
+                <div id="verify" class="tab-pane hidden">
+                    <div class="card p-6 mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">身份证号码查验</h2>
+                        
+                        <div class="mb-6">
+                            <label for="idNumber" class="block text-sm font-medium text-gray-700 mb-1">身份证号码</label>
+                            <div class="flex flex-wrap gap-3">
+                                <input type="text" id="idNumber" class="input-field flex-grow" placeholder="请输入18位身份证号码" maxlength="18">
+                                <button id="verifyBtn" class="btn btn-primary">
+                                    <i class="fa fa-check-circle mr-2"></i>查验
+                                </button>
+                                <button id="clearVerifyBtn" class="btn btn-outline">
+                                    <i class="fa fa-trash mr-2"></i>清空
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- 查验结果 - 成功 -->
+                        <div id="verifySuccessResult" class="hidden">
+                            <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <i class="fa fa-check-circle text-green-500 text-xl"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-lg font-medium text-green-800">查验完成</h3>
+                                        <div class="mt-2">
+                                            <p class="text-green-700">身份证号码: <span id="verifiedIdNumber" class="font-mono font-bold"></span></p>
+                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                                <div class="bg-white p-3 rounded-md shadow-sm">
+                                                    <p class="text-sm text-gray-500">注册地</p>
+                                                    <p id="verifiedRegion" class="font-medium"></p>
+                                                </div>
+                                                <div class="bg-white p-3 rounded-md shadow-sm">
+                                                    <p class="text-sm text-gray-500">出生日期</p>
+                                                    <p id="verifiedBirthdate" class="font-medium"></p>
+                                                </div>
+                                                <div class="bg-white p-3 rounded-md shadow-sm">
+                                                    <p class="text-sm text-gray-500">性别</p>
+                                                    <p id="verifiedGender" class="font-medium"></p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 查验结果 - 失败 -->
+                        <div id="verifyErrorResult" class="hidden">
+                            <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                                <div class="flex items-start">
+                                    <div class="flex-shrink-0">
+                                        <i class="fa fa-exclamation-triangle text-red-500 text-xl"></i>
+                                    </div>
+                                    <div class="ml-3">
+                                        <h3 class="text-lg font-medium text-red-800">身份证号码存在错误</h3>
+                                        <div class="mt-2">
+                                            <p class="text-red-700">输入的校验码: <span id="inputCheckDigit" class="font-mono font-bold"></span></p>
+                                            <p class="text-red-700">正确的校验码: <span id="correctCheckDigit" class="font-mono font-bold"></span></p>
+                                            <div class="mt-4">
+                                                <p class="text-gray-700">前14位: <span id="first14OfErrorId" class="font-mono"></span></p>
+                                                <p class="text-gray-700">输入的校验码：<span id="inputCheckDigitRepeat" class="font-mono"></span></p>
+                                                <div class="mt-2 max-h-64 overflow-y-auto scrollbar-thin">
+                                                    <div id="possibleSequences" class="mt-1"></div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 初始提示 -->
+                        <div id="verifyPrompt" class="flex flex-col items-center justify-center py-12 text-center">
+                            <div class="text-gray-400 mb-4">
+                                <i class="fa fa-id-card-o text-5xl"></i>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-700 mb-2">请输入身份证号码</h3>
+                            <p class="text-gray-500 max-w-md">输入后点击"查验"按钮，系统将验证身份证号码的正确性</p>
+                        </div>
+                        
+                        <!-- 加载状态 -->
+                        <div id="verifyLoading" class="hidden flex flex-col items-center justify-center py-12">
+                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                            <p class="text-gray-600">正在查验...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 生成身份证选项卡 -->
+                <div id="generate" class="tab-pane hidden">
+                    <div class="card p-6 mb-6">
+                        <h2 class="text-xl font-semibold text-gray-800 mb-4">生成身份证号码</h2>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                            <!-- 省份选择 -->
+                            <div>
+                                <label for="province" class="block text-sm font-medium text-gray-700 mb-1">省份</label>
+                                <select id="province" class="input-field region-select">
+                                    <option value="">请选择省份</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 城市选择 -->
+                            <div>
+                                <label for="city" class="block text-sm font-medium text-gray-700 mb-1">城市</label>
+                                <select id="city" class="input-field">
+                                    <option value="">请选择城市</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 区县选择 -->
+                            <div>
+                                <label for="district" class="block text-sm font-medium text-gray-700 mb-1">区县</label>
+                                <select id="district" class="input-field">
+                                    <option value="">请选择区县</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                            <!-- 出生日期选择 -->
+                            <div>
+                                <label for="year" class="block text-sm font-medium text-gray-700 mb-1">年份</label>
+                                <select id="year" class="input-field">
+                                    <option value="">请选择年份</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="month" class="block text-sm font-medium text-gray-700 mb-1">月份</label>
+                                <select id="month" class="input-field">
+                                    <option value="">请选择月份</option>
+                                </select>
+                            </div>
+                            
+                            <div>
+                                <label for="day" class="block text-sm font-medium text-gray-700 mb-1">日期</label>
+                                <select id="day" class="input-field">
+                                    <option value="">请选择日期</option>
+                                </select>
+                            </div>
+                            
+                            <!-- 性别选择 -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-1">性别</label>
+                                <div class="flex space-x-4">
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="gender" id="genderMale" value="male" class="form-radio text-primary" checked>
+                                        <span class="ml-2">男</span>
+                                    </label>
+                                    <label class="inline-flex items-center">
+                                        <input type="radio" name="gender" id="genderFemale" value="female" class="form-radio text-primary">
+                                        <span class="ml-2">女</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- 生成数量选择 -->
+                        <div class="mb-6">
+                            <label for="generateCount" class="block text-sm font-medium text-gray-700 mb-1">生成数量</label>
+                            <input type="number" id="generateCount" class="input-field w-32" min="1" max="100" value="1">
+                            <p class="text-sm text-gray-500 mt-1">最多可生成100个</p>
+                        </div>
+                        
+                        <!-- 按钮组 -->
+                        <div class="flex flex-wrap gap-3">
+                            <button id="generateIdBtn" class="btn btn-primary">
+                                <i class="fa fa-random mr-2"></i>生成
+                            </button>
+                            <button id="clearGenerateBtn" class="btn btn-outline">
+                                <i class="fa fa-trash mr-2"></i>清空
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- 生成结果显示区域 -->
+                    <div class="card p-6">
+                        <div class="flex justify-between items-center mb-4">
+                            <h3 class="text-lg font-semibold text-gray-800">生成结果</h3>
+                        </div>
+                        
+                        <div class="bg-gray-50 rounded-md p-4 font-mono text-lg text-center mb-4">
+                            <span id="generatedIdResult" class="text-primary"></span>
+                        </div>
+                        
+                        <div class="text-center">
+                            <button id="copyGeneratedBtn" class="btn btn-secondary hidden">
+                                <i class="fa fa-copy mr-2"></i>复制身份证号码
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- 状态栏 -->
+        <div id="statusBar" class="bg-gray-100 border border-gray-200 rounded-md py-2 px-4 text-sm text-gray-600 flex items-center">
+            <i class="fa fa-info-circle mr-2 text-primary"></i>
+            <span>就绪</span>
+        </div>
+
+        <!-- 页脚 -->
+        <footer class="mt-8 text-center text-gray-500 text-sm">
+            <p>© 2025 身份证校验码工具 | 仅供学习和参考使用</p>
+        </footer>
+    </div>
+
+    <!-- 通知提示 -->
+    <div id="notification" class="fixed bottom-4 right-4 transform translate-y-full opacity-0 transition-all duration-300 z-50 max-w-xs">
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 flex items-start">
+            <div id="notificationIcon" class="flex-shrink-0 mr-3"></div>
+            <div class="flex-1">
+                <h4 id="notificationTitle" class="text-sm font-medium text-gray-800"></h4>
+                <p id="notificationMessage" class="text-sm text-gray-600 mt-1"></p>
+            </div>
+            <button id="closeNotification" class="text-gray-400 hover:text-gray-500">
+                <i class="fa fa-times"></i>
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 常量定义
+        const WEIGHTS = [7, 9, 10, 5, 8, 4, 2, 1, 6, 3, 7, 9, 10, 5, 8, 4, 2];
+        
+        // DOM元素
+        const tabNav = document.getElementById('tabNav');
+        const tabContent = document.getElementById('tabContent');
+        const tabPanes = document.querySelectorAll('.tab-pane');
+        const statusBar = document.getElementById('statusBar');
+        const notification = document.getElementById('notification');
+        
+        // 搜索顺序码相关元素
+        const first14Input = document.getElementById('first14');
+        const checkDigitInput = document.getElementById('checkDigit');
+        const genderRadios = document.querySelectorAll('input[name="gender"]');
+        const searchBtn = document.getElementById('searchBtn');
+        const clearSearchBtn = document.getElementById('clearSearchBtn');
+        const copySearchBtn = document.getElementById('copySearchBtn');
+        const searchStats = document.getElementById('searchStats');
+        const searchConditions = document.getElementById('searchConditions');
+        const searchResults = document.getElementById('searchResults');
+        const searchResultsLoading = document.getElementById('searchResultsLoading');
+        
+        // 计算校验码相关元素
+        const id17Input = document.getElementById('id17');
+        const calculateBtn = document.getElementById('calculateBtn');
+        const clearCalculateBtn = document.getElementById('clearCalculateBtn');
+        const calculationResult = document.getElementById('calculationResult');
+        const calculationPrompt = document.getElementById('calculationPrompt');
+        const calculationLoading = document.getElementById('calculationLoading');
+        const checkDigitResult = document.getElementById('checkDigitResult');
+        const fullIdResult = document.getElementById('fullIdResult');
+        
+        // 身份证查验相关元素
+        const idNumberInput = document.getElementById('idNumber');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const clearVerifyBtn = document.getElementById('clearVerifyBtn');
+        const verifyPrompt = document.getElementById('verifyPrompt');
+        const verifyLoading = document.getElementById('verifyLoading');
+        const verifySuccessResult = document.getElementById('verifySuccessResult');
+        const verifyErrorResult = document.getElementById('verifyErrorResult');
+        const verifiedIdNumber = document.getElementById('verifiedIdNumber');
+        const verifiedRegion = document.getElementById('verifiedRegion');
+        const verifiedBirthdate = document.getElementById('verifiedBirthdate');
+        const verifiedGender = document.getElementById('verifiedGender');
+        const inputCheckDigit = document.getElementById('inputCheckDigit');
+        const correctCheckDigit = document.getElementById('correctCheckDigit');
+        const first14OfErrorId = document.getElementById('first14OfErrorId');
+        const possibleSequences = document.getElementById('possibleSequences');
+        
+        // 生成身份证相关元素
+        const provinceSelect = document.getElementById('province');
+        const citySelect = document.getElementById('city');
+        const districtSelect = document.getElementById('district');
+        const yearSelect = document.getElementById('year');
+        const monthSelect = document.getElementById('month');
+        const daySelect = document.getElementById('day');
+        const generateCountInput = document.getElementById('generateCount');
+        const generateIdBtn = document.getElementById('generateIdBtn');
+        const clearGenerateBtn = document.getElementById('clearGenerateBtn');
+        const generatedIdResult = document.getElementById('generatedIdResult');
+        const copyGeneratedBtn = document.getElementById('copyGeneratedBtn');
+        
+        // 地址码数据（后续你可以在这里添加所有地址码）
+        const addressCodes = {
+            "北京市": {
+                "市辖区": {
+                "东城区": "110101",
+                "西城区": "110102",
+                "朝阳区": "110105",
+                "丰台区": "110106",
+                "石景山区": "110107",
+                "海淀区": "110108",
+                "门头沟区": "110109",
+                "房山区": "110111",
+                "通州区": "110112",
+                "顺义区": "110113",
+                "昌平区": "110114",
+                "大兴区": "110115",
+                "怀柔区": "110116",
+                "平谷区": "110117",
+                "密云区": "110118",
+                "延庆区": "110119"
+                }
+            },
+            "天津市": {
+                "市辖区": {
+                "和平区": "120101",
+                "河东区": "120102",
+                "河西区": "120103",
+                "南开区": "120104",
+                "河北区": "120105",
+                "红桥区": "120106",
+                "东丽区": "120110",
+                "西青区": "120111",
+                "津南区": "120112",
+                "北辰区": "120113",
+                "武清区": "120114",
+                "宝坻区": "120115",
+                "滨海新区": "120116",
+                "宁河区": "120117",
+                "静海区": "120118",
+                "蓟州区": "120119"
+                }
+            },
+            "上海市": {
+                "市辖区": {
+                "黄浦区": "310101",
+                "徐汇区": "310104",
+                "长宁区": "310105",
+                "静安区": "310106",
+                "普陀区": "310107",
+                "虹口区": "310109",
+                "杨浦区": "310110",
+                "闵行区": "310112",
+                "宝山区": "310113",
+                "嘉定区": "310114",
+                "浦东新区": "310115",
+                "金山区": "310116",
+                "松江区": "310117",
+                "青浦区": "310118",
+                "奉贤区": "310120",
+                "崇明区": "310151"
+                }
+            },
+            "重庆市": {
+                "市辖区": {
+                "万州区": "500101",
+                "涪陵区": "500102",
+                "渝中区": "500103",
+                "大渡口区": "500104",
+                "江北区": "500105",
+                "沙坪坝区": "500106",
+                "九龙坡区": "500107",
+                "南岸区": "500108",
+                "北碚区": "500109",
+                "綦江区": "500110",
+                "大足区": "500111",
+                "渝北区": "500112",
+                "巴南区": "500113",
+                "黔江区": "500114",
+                "长寿区": "500115",
+                "江津区": "500116",
+                "合川区": "500117",
+                "永川区": "500118",
+                "南川区": "500119",
+                "璧山区": "500120",
+                "铜梁区": "500151",
+                "潼南区": "500152",
+                "荣昌区": "500153",
+                "开州区": "500154",
+                "梁平区": "500155",
+                "武隆区": "500156"
+                },
+                "县": {
+                "城口县": "500229",
+                "丰都县": "500230",
+                "垫江县": "500231",
+                "忠县": "500233",
+                "云阳县": "500235",
+                "奉节县": "500236",
+                "巫山县": "500237",
+                "巫溪县": "500238",
+                "石柱土家族自治县": "500240",
+                "秀山土家族苗族自治县": "500241",
+                "酉阳土家族苗族自治县": "500242",
+                "彭水苗族土家族自治县": "500243"
+                }
+            },
+            "河北省": {
+                "石家庄市": {
+                "长安区": "130102",
+                "桥西区": "130104",
+                "新华区": "130105",
+                "井陉矿区": "130107",
+                "裕华区": "130108",
+                "藁城区": "130109",
+                "鹿泉区": "130110",
+                "栾城区": "130111",
+                "井陉县": "130121",
+                "正定县": "130123",
+                "行唐县": "130125",
+                "灵寿县": "130126",
+                "高邑县": "130127",
+                "深泽县": "130128",
+                "赞皇县": "130129",
+                "无极县": "130130",
+                "平山县": "130131",
+                "元氏县": "130132",
+                "赵县": "130133",
+                "石家庄高新技术产业开发区": "130171",
+                "石家庄循环化工园区": "130172",
+                "辛集市": "130181",
+                "晋州市": "130183",
+                "新乐市": "130184"
+                },
+                "唐山市": {
+                "路南区": "130202",
+                "路北区": "130203",
+                "古冶区": "130204",
+                "开平区": "130205",
+                "丰南区": "130207",
+                "丰润区": "130208",
+                "曹妃甸区": "130209",
+                "滦南县": "130224",
+                "乐亭县": "130225",
+                "迁西县": "130227",
+                "玉田县": "130229",
+                "河北唐山芦台经济开发区": "130271",
+                "唐山市汉沽管理区": "130272",
+                "唐山高新技术产业开发区": "130273",
+                "河北唐山海港经济开发区": "130274",
+                "遵化市": "130281",
+                "迁安市": "130283",
+                "滦州市": "130284"
+                },
+                "秦皇岛市": {
+                "海港区": "130302",
+                "山海关区": "130303",
+                "北戴河区": "130304",
+                "抚宁区": "130306",
+                "青龙满族自治县": "130321",
+                "昌黎县": "130322",
+                "卢龙县": "130324",
+                "秦皇岛市经济技术开发区": "130371",
+                "北戴河新区": "130372"
+                },
+                "邯郸市": {
+                "邯山区": "130402",
+                "丛台区": "130403",
+                "复兴区": "130404",
+                "峰峰矿区": "130406",
+                "肥乡区": "130407",
+                "永年区": "130408",
+                "临漳县": "130423",
+                "成安县": "130424",
+                "大名县": "130425",
+                "涉县": "130426",
+                "磁县": "130427",
+                "邱县": "130430",
+                "鸡泽县": "130431",
+                "广平县": "130432",
+                "馆陶县": "130433",
+                "魏县": "130434",
+                "曲周县": "130435",
+                "邯郸经济技术开发区": "130471",
+                "邯郸冀南新区": "130473",
+                "武安市": "130481"
+                },
+                "邢台市": {
+                "襄都区": "130502",
+                "信都区": "130503",
+                "任泽区": "130505",
+                "南和区": "130506",
+                "临城县": "130522",
+                "内丘县": "130523",
+                "柏乡县": "130524",
+                "隆尧县": "130525",
+                "宁晋县": "130528",
+                "巨鹿县": "130529",
+                "新河县": "130530",
+                "广宗县": "130531",
+                "平乡县": "130532",
+                "威县": "130533",
+                "清河县": "130534",
+                "临西县": "130535",
+                "河北邢台经济开发区": "130571",
+                "南宫市": "130581",
+                "沙河市": "130582"
+                },
+                "保定市": {
+                "竞秀区": "130602",
+                "莲池区": "130606",
+                "满城区": "130607",
+                "清苑区": "130608",
+                "徐水区": "130609",
+                "涞水县": "130623",
+                "阜平县": "130624",
+                "定兴县": "130626",
+                "唐县": "130627",
+                "高阳县": "130628",
+                "容城县": "130629",
+                "涞源县": "130630",
+                "望都县": "130631",
+                "安新县": "130632",
+                "易县": "130633",
+                "曲阳县": "130634",
+                "蠡县": "130635",
+                "顺平县": "130636",
+                "博野县": "130637",
+                "雄县": "130638",
+                "保定高新技术产业开发区": "130671",
+                "保定白沟新城": "130672",
+                "涿州市": "130681",
+                "定州市": "130682",
+                "安国市": "130683",
+                "高碑店市": "130684"
+                },
+                "张家口市": {
+                "桥东区": "130702",
+                "桥西区": "130703",
+                "宣化区": "130705",
+                "下花园区": "130706",
+                "万全区": "130708",
+                "崇礼区": "130709",
+                "张北县": "130722",
+                "康保县": "130723",
+                "沽源县": "130724",
+                "尚义县": "130725",
+                "蔚县": "130726",
+                "阳原县": "130727",
+                "怀安县": "130728",
+                "怀来县": "130730",
+                "涿鹿县": "130731",
+                "赤城县": "130732",
+                "张家口经济开发区": "130771",
+                "张家口市察北管理区": "130772",
+                "张家口市塞北管理区": "130773"
+                },
+                "承德市": {
+                "双桥区": "130802",
+                "双滦区": "130803",
+                "鹰手营子矿区": "130804",
+                "承德县": "130821",
+                "兴隆县": "130822",
+                "滦平县": "130824",
+                "隆化县": "130825",
+                "丰宁满族自治县": "130826",
+                "宽城满族自治县": "130827",
+                "围场满族蒙古族自治县": "130828",
+                "承德高新技术产业开发区": "130871",
+                "平泉市": "130881"
+                },
+                "沧州市": {
+                "新华区": "130902",
+                "运河区": "130903",
+                "沧县": "130921",
+                "青县": "130922",
+                "东光县": "130923",
+                "海兴县": "130924",
+                "盐山县": "130925",
+                "肃宁县": "130926",
+                "南皮县": "130927",
+                "吴桥县": "130928",
+                "献县": "130929",
+                "孟村回族自治县": "130930",
+                "河北沧州经济开发区": "130971",
+                "沧州高新技术产业开发区": "130972",
+                "沧州渤海新区": "130973",
+                "泊头市": "130981",
+                "任丘市": "130982",
+                "黄骅市": "130983",
+                "河间市": "130984"
+                },
+                "廊坊市": {
+                "安次区": "131002",
+                "广阳区": "131003",
+                "固安县": "131022",
+                "永清县": "131023",
+                "香河县": "131024",
+                "大城县": "131025",
+                "文安县": "131026",
+                "大厂回族自治县": "131028",
+                "廊坊经济技术开发区": "131071",
+                "霸州市": "131081",
+                "三河市": "131082"
+                },
+                "衡水市": {
+                "桃城区": "131102",
+                "冀州区": "131103",
+                "枣强县": "131121",
+                "武邑县": "131122",
+                "武强县": "131123",
+                "饶阳县": "131124",
+                "安平县": "131125",
+                "故城县": "131126",
+                "景县": "131127",
+                "阜城县": "131128",
+                "河北衡水高新技术产业开发区": "131171",
+                "衡水滨湖新区": "131172",
+                "深州市": "131182"
+                }
+            },
+            "山西省": {
+                "太原市": {
+                "小店区": "140105",
+                "迎泽区": "140106",
+                "杏花岭区": "140107",
+                "尖草坪区": "140108",
+                "万柏林区": "140109",
+                "晋源区": "140110",
+                "清徐县": "140121",
+                "阳曲县": "140122",
+                "娄烦县": "140123",
+                "山西转型综合改革示范区": "140171",
+                "古交市": "140181"
+                },
+                "大同市": {
+                "新荣区": "140212",
+                "平城区": "140213",
+                "云冈区": "140214",
+                "云州区": "140215",
+                "阳高县": "140221",
+                "天镇县": "140222",
+                "广灵县": "140223",
+                "灵丘县": "140224",
+                "浑源县": "140225",
+                "左云县": "140226",
+                "山西大同经济开发区": "140271"
+                },
+                "阳泉市": {
+                "城区": "140302",
+                "矿区": "140303",
+                "郊区": "140311",
+                "平定县": "140321",
+                "盂县": "140322"
+                },
+                "长治市": {
+                "潞州区": "140403",
+                "上党区": "140404",
+                "屯留区": "140405",
+                "潞城区": "140406",
+                "襄垣县": "140423",
+                "平顺县": "140425",
+                "黎城县": "140426",
+                "壶关县": "140427",
+                "长子县": "140428",
+                "武乡县": "140429",
+                "沁县": "140430",
+                "沁源县": "140431"
+                },
+                "晋城市": {
+                "城区": "140502",
+                "沁水县": "140521",
+                "阳城县": "140522",
+                "陵川县": "140524",
+                "泽州县": "140525",
+                "高平市": "140581"
+                },
+                "朔州市": {
+                "朔城区": "140602",
+                "平鲁区": "140603",
+                "山阴县": "140621",
+                "应县": "140622",
+                "右玉县": "140623",
+                "山西朔州经济开发区": "140671",
+                "怀仁市": "140681"
+                },
+                "晋中市": {
+                "榆次区": "140702",
+                "太谷区": "140703",
+                "榆社县": "140721",
+                "左权县": "140722",
+                "和顺县": "140723",
+                "昔阳县": "140724",
+                "寿阳县": "140725",
+                "祁县": "140727",
+                "平遥县": "140728",
+                "灵石县": "140729",
+                "介休市": "140781"
+                },
+                "运城市": {
+                "盐湖区": "140802",
+                "临猗县": "140821",
+                "万荣县": "140822",
+                "闻喜县": "140823",
+                "稷山县": "140824",
+                "新绛县": "140825",
+                "绛县": "140826",
+                "垣曲县": "140827",
+                "夏县": "140828",
+                "平陆县": "140829",
+                "芮城县": "140830",
+                "永济市": "140881",
+                "河津市": "140882"
+                },
+                "忻州市": {
+                "忻府区": "140902",
+                "定襄县": "140921",
+                "五台县": "140922",
+                "代县": "140923",
+                "繁峙县": "140924",
+                "宁武县": "140925",
+                "静乐县": "140926",
+                "神池县": "140927",
+                "五寨县": "140928",
+                "岢岚县": "140929",
+                "河曲县": "140930",
+                "保德县": "140931",
+                "偏关县": "140932",
+                "五台山风景名胜区": "140971",
+                "原平市": "140981"
+                },
+                "临汾市": {
+                "尧都区": "141002",
+                "曲沃县": "141021",
+                "翼城县": "141022",
+                "襄汾县": "141023",
+                "洪洞县": "141024",
+                "古县": "141025",
+                "安泽县": "141026",
+                "浮山县": "141027",
+                "吉县": "141028",
+                "乡宁县": "141029",
+                "大宁县": "141030",
+                "隰县": "141031",
+                "永和县": "141032",
+                "蒲县": "141033",
+                "汾西县": "141034",
+                "侯马市": "141081",
+                "霍州市": "141082"
+                },
+                "吕梁市": {
+                "离石区": "141102",
+                "文水县": "141121",
+                "交城县": "141122",
+                "兴县": "141123",
+                "临县": "141124",
+                "柳林县": "141125",
+                "石楼县": "141126",
+                "岚县": "141127",
+                "方山县": "141128",
+                "中阳县": "141129",
+                "交口县": "141130",
+                "孝义市": "141181",
+                "汾阳市": "141182"
+                }
+            },
+            "内蒙古自治区": {
+                "呼和浩特市": {
+                "新城区": "150102",
+                "回民区": "150103",
+                "玉泉区": "150104",
+                "赛罕区": "150105",
+                "土默特左旗": "150121",
+                "托克托县": "150122",
+                "和林格尔县": "150123",
+                "清水河县": "150124",
+                "武川县": "150125",
+                "呼和浩特经济技术开发区": "150172"
+                },
+                "包头市": {
+                "东河区": "150202",
+                "昆都仑区": "150203",
+                "青山区": "150204",
+                "石拐区": "150205",
+                "白云鄂博矿区": "150206",
+                "九原区": "150207",
+                "土默特右旗": "150221",
+                "固阳县": "150222",
+                "达尔罕茂明安联合旗": "150223",
+                "包头稀土高新技术产业开发区": "150271"
+                },
+                "乌海市": {
+                "海勃湾区": "150302",
+                "海南区": "150303",
+                "乌达区": "150304"
+                },
+                "赤峰市": {
+                "红山区": "150402",
+                "元宝山区": "150403",
+                "松山区": "150404",
+                "阿鲁科尔沁旗": "150421",
+                "巴林左旗": "150422",
+                "巴林右旗": "150423",
+                "林西县": "150424",
+                "克什克腾旗": "150425",
+                "翁牛特旗": "150426",
+                "喀喇沁旗": "150428",
+                "宁城县": "150429",
+                "敖汉旗": "150430"
+                },
+                "通辽市": {
+                "科尔沁区": "150502",
+                "科尔沁左翼中旗": "150521",
+                "科尔沁左翼后旗": "150522",
+                "开鲁县": "150523",
+                "库伦旗": "150524",
+                "奈曼旗": "150525",
+                "扎鲁特旗": "150526",
+                "通辽经济技术开发区": "150571",
+                "霍林郭勒市": "150581"
+                },
+                "鄂尔多斯市": {
+                "东胜区": "150602",
+                "康巴什区": "150603",
+                "达拉特旗": "150621",
+                "准格尔旗": "150622",
+                "鄂托克前旗": "150623",
+                "鄂托克旗": "150624",
+                "杭锦旗": "150625",
+                "乌审旗": "150626",
+                "伊金霍洛旗": "150627"
+                },
+                "呼伦贝尔市": {
+                "海拉尔区": "150702",
+                "扎赉诺尔区": "150703",
+                "阿荣旗": "150721",
+                "莫力达瓦达斡尔族自治旗": "150722",
+                "鄂伦春自治旗": "150723",
+                "鄂温克族自治旗": "150724",
+                "陈巴尔虎旗": "150725",
+                "新巴尔虎左旗": "150726",
+                "新巴尔虎右旗": "150727",
+                "满洲里市": "150781",
+                "牙克石市": "150782",
+                "扎兰屯市": "150783",
+                "额尔古纳市": "150784",
+                "根河市": "150785"
+                },
+                "巴彦淖尔市": {
+                "临河区": "150802",
+                "五原县": "150821",
+                "磴口县": "150822",
+                "乌拉特前旗": "150823",
+                "乌拉特中旗": "150824",
+                "乌拉特后旗": "150825",
+                "杭锦后旗": "150826"
+                },
+                "乌兰察布市": {
+                "集宁区": "150902",
+                "卓资县": "150921",
+                "化德县": "150922",
+                "商都县": "150923",
+                "兴和县": "150924",
+                "凉城县": "150925",
+                "察哈尔右翼前旗": "150926",
+                "察哈尔右翼中旗": "150927",
+                "察哈尔右翼后旗": "150928",
+                "四子王旗": "150929",
+                "丰镇市": "150981"
+                },
+                "兴安盟": {
+                "乌兰浩特市": "152201",
+                "阿尔山市": "152202",
+                "科尔沁右翼前旗": "152221",
+                "科尔沁右翼中旗": "152222",
+                "扎赉特旗": "152223",
+                "突泉县": "152224"
+                },
+                "锡林郭勒盟": {
+                "二连浩特市": "152501",
+                "锡林浩特市": "152502",
+                "阿巴嘎旗": "152522",
+                "苏尼特左旗": "152523",
+                "苏尼特右旗": "152524",
+                "东乌珠穆沁旗": "152525",
+                "西乌珠穆沁旗": "152526",
+                "太仆寺旗": "152527",
+                "镶黄旗": "152528",
+                "正镶白旗": "152529",
+                "正蓝旗": "152530",
+                "多伦县": "152531",
+                "乌拉盖管理区管委会": "152571"
+                },
+                "阿拉善盟": {
+                "阿拉善左旗": "152921",
+                "阿拉善右旗": "152922",
+                "额济纳旗": "152923",
+                "内蒙古阿拉善高新技术产业开发区": "152971"
+                }
+            },
+            "辽宁省": {
+                "沈阳市": {
+                "和平区": "210102",
+                "沈河区": "210103",
+                "大东区": "210104",
+                "皇姑区": "210105",
+                "铁西区": "210106",
+                "苏家屯区": "210111",
+                "浑南区": "210112",
+                "沈北新区": "210113",
+                "于洪区": "210114",
+                "辽中区": "210115",
+                "康平县": "210123",
+                "法库县": "210124",
+                "新民市": "210181"
+                },
+                "大连市": {
+                "中山区": "210202",
+                "西岗区": "210203",
+                "沙河口区": "210204",
+                "甘井子区": "210211",
+                "旅顺口区": "210212",
+                "金州区": "210213",
+                "普兰店区": "210214",
+                "长海县": "210224",
+                "瓦房店市": "210281",
+                "庄河市": "210283"
+                },
+                "鞍山市": {
+                "铁东区": "210302",
+                "铁西区": "210303",
+                "立山区": "210304",
+                "千山区": "210311",
+                "台安县": "210321",
+                "岫岩满族自治县": "210323",
+                "海城市": "210381"
+                },
+                "抚顺市": {
+                "新抚区": "210402",
+                "东洲区": "210403",
+                "望花区": "210404",
+                "顺城区": "210411",
+                "抚顺县": "210421",
+                "新宾满族自治县": "210422",
+                "清原满族自治县": "210423"
+                },
+                "本溪市": {
+                "平山区": "210502",
+                "溪湖区": "210503",
+                "明山区": "210504",
+                "南芬区": "210505",
+                "本溪满族自治县": "210521",
+                "桓仁满族自治县": "210522"
+                },
+                "丹东市": {
+                "元宝区": "210602",
+                "振兴区": "210603",
+                "振安区": "210604",
+                "宽甸满族自治县": "210624",
+                "东港市": "210681",
+                "凤城市": "210682"
+                },
+                "锦州市": {
+                "古塔区": "210702",
+                "凌河区": "210703",
+                "太和区": "210711",
+                "黑山县": "210726",
+                "义县": "210727",
+                "凌海市": "210781",
+                "北镇市": "210782"
+                },
+                "营口市": {
+                "站前区": "210802",
+                "西市区": "210803",
+                "鲅鱼圈区": "210804",
+                "老边区": "210811",
+                "盖州市": "210881",
+                "大石桥市": "210882"
+                },
+                "阜新市": {
+                "海州区": "210902",
+                "新邱区": "210903",
+                "太平区": "210904",
+                "清河门区": "210905",
+                "细河区": "210911",
+                "阜新蒙古族自治县": "210921",
+                "彰武县": "210922"
+                },
+                "辽阳市": {
+                "白塔区": "211002",
+                "文圣区": "211003",
+                "宏伟区": "211004",
+                "弓长岭区": "211005",
+                "太子河区": "211011",
+                "辽阳县": "211021",
+                "灯塔市": "211081"
+                },
+                "盘锦市": {
+                "双台子区": "211102",
+                "兴隆台区": "211103",
+                "大洼区": "211104",
+                "盘山县": "211122"
+                },
+                "铁岭市": {
+                "银州区": "211202",
+                "清河区": "211204",
+                "铁岭县": "211221",
+                "西丰县": "211223",
+                "昌图县": "211224",
+                "调兵山市": "211281",
+                "开原市": "211282"
+                },
+                "朝阳市": {
+                "双塔区": "211302",
+                "龙城区": "211303",
+                "朝阳县": "211321",
+                "建平县": "211322",
+                "喀喇沁左翼蒙古族自治县": "211324",
+                "北票市": "211381",
+                "凌源市": "211382"
+                },
+                "葫芦岛市": {
+                "连山区": "211402",
+                "龙港区": "211403",
+                "南票区": "211404",
+                "绥中县": "211421",
+                "建昌县": "211422",
+                "兴城市": "211481"
+                }
+            },
+            "吉林省": {
+                "长春市": {
+                "南关区": "220102",
+                "宽城区": "220103",
+                "朝阳区": "220104",
+                "二道区": "220105",
+                "绿园区": "220106",
+                "双阳区": "220112",
+                "九台区": "220113",
+                "农安县": "220122",
+                "长春经济技术开发区": "220171",
+                "长春净月高新技术产业开发区": "220172",
+                "长春高新技术产业开发区": "220173",
+                "长春汽车经济技术开发区": "220174",
+                "榆树市": "220182",
+                "德惠市": "220183",
+                "公主岭市": "220184"
+                },
+                "吉林市": {
+                "昌邑区": "220202",
+                "龙潭区": "220203",
+                "船营区": "220204",
+                "丰满区": "220211",
+                "永吉县": "220221",
+                "吉林经济开发区": "220271",
+                "吉林高新技术产业开发区": "220272",
+                "吉林中国新加坡食品区": "220273",
+                "蛟河市": "220281",
+                "桦甸市": "220282",
+                "舒兰市": "220283",
+                "磐石市": "220284"
+                },
+                "四平市": {
+                "铁西区": "220302",
+                "铁东区": "220303",
+                "梨树县": "220322",
+                "伊通满族自治县": "220323",
+                "双辽市": "220382"
+                },
+                "辽源市": {
+                "龙山区": "220402",
+                "西安区": "220403",
+                "东丰县": "220421",
+                "东辽县": "220422"
+                },
+                "通化市": {
+                "东昌区": "220502",
+                "二道江区": "220503",
+                "通化县": "220521",
+                "辉南县": "220523",
+                "柳河县": "220524",
+                "梅河口市": "220581",
+                "集安市": "220582"
+                },
+                "白山市": {
+                "浑江区": "220602",
+                "江源区": "220605",
+                "抚松县": "220621",
+                "靖宇县": "220622",
+                "长白朝鲜族自治县": "220623",
+                "临江市": "220681"
+                },
+                "松原市": {
+                "宁江区": "220702",
+                "前郭尔罗斯蒙古族自治县": "220721",
+                "长岭县": "220722",
+                "乾安县": "220723",
+                "吉林松原经济开发区": "220771",
+                "扶余市": "220781"
+                },
+                "白城市": {
+                "洮北区": "220802",
+                "镇赉县": "220821",
+                "通榆县": "220822",
+                "吉林白城经济开发区": "220871",
+                "洮南市": "220881",
+                "大安市": "220882"
+                },
+                "延边朝鲜族自治州": {
+                "延吉市": "222401",
+                "图们市": "222402",
+                "敦化市": "222403",
+                "珲春市": "222404",
+                "龙井市": "222405",
+                "和龙市": "222406",
+                "汪清县": "222424",
+                "安图县": "222426"
+                }
+            },
+            "黑龙江省": {
+                "哈尔滨市": {
+                "道里区": "230102",
+                "南岗区": "230103",
+                "道外区": "230104",
+                "平房区": "230108",
+                "松北区": "230109",
+                "香坊区": "230110",
+                "呼兰区": "230111",
+                "阿城区": "230112",
+                "双城区": "230113",
+                "依兰县": "230123",
+                "方正县": "230124",
+                "宾县": "230125",
+                "巴彦县": "230126",
+                "木兰县": "230127",
+                "通河县": "230128",
+                "延寿县": "230129",
+                "尚志市": "230183",
+                "五常市": "230184"
+                },
+                "齐齐哈尔市": {
+                "龙沙区": "230202",
+                "建华区": "230203",
+                "铁锋区": "230204",
+                "昂昂溪区": "230205",
+                "富拉尔基区": "230206",
+                "碾子山区": "230207",
+                "梅里斯达斡尔族区": "230208",
+                "龙江县": "230221",
+                "依安县": "230223",
+                "泰来县": "230224",
+                "甘南县": "230225",
+                "富裕县": "230227",
+                "克山县": "230229",
+                "克东县": "230230",
+                "拜泉县": "230231",
+                "讷河市": "230281"
+                },
+                "鸡西市": {
+                "鸡冠区": "230302",
+                "恒山区": "230303",
+                "滴道区": "230304",
+                "梨树区": "230305",
+                "城子河区": "230306",
+                "麻山区": "230307",
+                "鸡东县": "230321",
+                "虎林市": "230381",
+                "密山市": "230382"
+                },
+                "鹤岗市": {
+                "向阳区": "230402",
+                "工农区": "230403",
+                "南山区": "230404",
+                "兴安区": "230405",
+                "东山区": "230406",
+                "兴山区": "230407",
+                "萝北县": "230421",
+                "绥滨县": "230422"
+                },
+                "双鸭山市": {
+                "尖山区": "230502",
+                "岭东区": "230503",
+                "四方台区": "230505",
+                "宝山区": "230506",
+                "集贤县": "230521",
+                "友谊县": "230522",
+                "宝清县": "230523",
+                "饶河县": "230524"
+                },
+                "大庆市": {
+                "萨尔图区": "230602",
+                "龙凤区": "230603",
+                "让胡路区": "230604",
+                "红岗区": "230605",
+                "大同区": "230606",
+                "肇州县": "230621",
+                "肇源县": "230622",
+                "林甸县": "230623",
+                "杜尔伯特蒙古族自治县": "230624",
+                "大庆高新技术产业开发区": "230671"
+                },
+                "伊春市": {
+                "伊美区": "230717",
+                "乌翠区": "230718",
+                "友好区": "230719",
+                "嘉荫县": "230722",
+                "汤旺县": "230723",
+                "丰林县": "230724",
+                "大箐山县": "230725",
+                "南岔县": "230726",
+                "金林区": "230751",
+                "铁力市": "230781"
+                },
+                "佳木斯市": {
+                "向阳区": "230803",
+                "前进区": "230804",
+                "东风区": "230805",
+                "郊区": "230811",
+                "桦南县": "230822",
+                "桦川县": "230826",
+                "汤原县": "230828",
+                "同江市": "230881",
+                "富锦市": "230882",
+                "抚远市": "230883"
+                },
+                "七台河市": {
+                "新兴区": "230902",
+                "桃山区": "230903",
+                "茄子河区": "230904",
+                "勃利县": "230921"
+                },
+                "牡丹江市": {
+                "东安区": "231002",
+                "阳明区": "231003",
+                "爱民区": "231004",
+                "西安区": "231005",
+                "林口县": "231025",
+                "绥芬河市": "231081",
+                "海林市": "231083",
+                "宁安市": "231084",
+                "穆棱市": "231085",
+                "东宁市": "231086"
+                },
+                "黑河市": {
+                "爱辉区": "231102",
+                "逊克县": "231123",
+                "孙吴县": "231124",
+                "北安市": "231181",
+                "五大连池市": "231182",
+                "嫩江市": "231183"
+                },
+                "绥化市": {
+                "北林区": "231202",
+                "望奎县": "231221",
+                "兰西县": "231222",
+                "青冈县": "231223",
+                "庆安县": "231224",
+                "明水县": "231225",
+                "绥棱县": "231226",
+                "安达市": "231281",
+                "肇东市": "231282",
+                "海伦市": "231283"
+                },
+                "大兴安岭地区": {
+                "漠河市": "232701",
+                "呼玛县": "232721",
+                "塔河县": "232722",
+                "加格达奇区": "232761",
+                "松岭区": "232762",
+                "新林区": "232763",
+                "呼中区": "232764"
+                }
+            },
+            "江苏省": {
+                "南京市": {
+                "玄武区": "320102",
+                "秦淮区": "320104",
+                "建邺区": "320105",
+                "鼓楼区": "320106",
+                "浦口区": "320111",
+                "栖霞区": "320113",
+                "雨花台区": "320114",
+                "江宁区": "320115",
+                "六合区": "320116",
+                "溧水区": "320117",
+                "高淳区": "320118"
+                },
+                "无锡市": {
+                "锡山区": "320205",
+                "惠山区": "320206",
+                "滨湖区": "320211",
+                "梁溪区": "320213",
+                "新吴区": "320214",
+                "江阴市": "320281",
+                "宜兴市": "320282"
+                },
+                "徐州市": {
+                "鼓楼区": "320302",
+                "云龙区": "320303",
+                "贾汪区": "320305",
+                "泉山区": "320311",
+                "铜山区": "320312",
+                "丰县": "320321",
+                "沛县": "320322",
+                "睢宁县": "320324",
+                "徐州经济技术开发区": "320371",
+                "新沂市": "320381",
+                "邳州市": "320382"
+                },
+                "常州市": {
+                "天宁区": "320402",
+                "钟楼区": "320404",
+                "新北区": "320411",
+                "武进区": "320412",
+                "金坛区": "320413",
+                "溧阳市": "320481"
+                },
+                "苏州市": {
+                "虎丘区": "320505",
+                "吴中区": "320506",
+                "相城区": "320507",
+                "姑苏区": "320508",
+                "吴江区": "320509",
+                "苏州工业园区": "320576",
+                "常熟市": "320581",
+                "张家港市": "320582",
+                "昆山市": "320583",
+                "太仓市": "320585"
+                },
+                "南通市": {
+                "通州区": "320612",
+                "崇川区": "320613",
+                "海门区": "320614",
+                "如东县": "320623",
+                "南通经济技术开发区": "320671",
+                "启东市": "320681",
+                "如皋市": "320682",
+                "海安市": "320685"
+                },
+                "连云港市": {
+                "连云区": "320703",
+                "海州区": "320706",
+                "赣榆区": "320707",
+                "东海县": "320722",
+                "灌云县": "320723",
+                "灌南县": "320724",
+                "连云港经济技术开发区": "320771"
+                },
+                "淮安市": {
+                "淮安区": "320803",
+                "淮阴区": "320804",
+                "清江浦区": "320812",
+                "洪泽区": "320813",
+                "涟水县": "320826",
+                "盱眙县": "320830",
+                "金湖县": "320831",
+                "淮安经济技术开发区": "320871"
+                },
+                "盐城市": {
+                "亭湖区": "320902",
+                "盐都区": "320903",
+                "大丰区": "320904",
+                "响水县": "320921",
+                "滨海县": "320922",
+                "阜宁县": "320923",
+                "射阳县": "320924",
+                "建湖县": "320925",
+                "盐城经济技术开发区": "320971",
+                "东台市": "320981"
+                },
+                "扬州市": {
+                "广陵区": "321002",
+                "邗江区": "321003",
+                "江都区": "321012",
+                "宝应县": "321023",
+                "扬州经济技术开发区": "321071",
+                "仪征市": "321081",
+                "高邮市": "321084"
+                },
+                "镇江市": {
+                "京口区": "321102",
+                "润州区": "321111",
+                "丹徒区": "321112",
+                "镇江新区": "321171",
+                "丹阳市": "321181",
+                "扬中市": "321182",
+                "句容市": "321183"
+                },
+                "泰州市": {
+                "海陵区": "321202",
+                "高港区": "321203",
+                "姜堰区": "321204",
+                "兴化市": "321281",
+                "靖江市": "321282",
+                "泰兴市": "321283"
+                },
+                "宿迁市": {
+                "宿城区": "321302",
+                "宿豫区": "321311",
+                "沭阳县": "321322",
+                "泗阳县": "321323",
+                "泗洪县": "321324",
+                "宿迁经济技术开发区": "321371"
+                }
+            },
+            "浙江省": {
+                "杭州市": {
+                "上城区": "330102",
+                "拱墅区": "330105",
+                "西湖区": "330106",
+                "滨江区": "330108",
+                "萧山区": "330109",
+                "余杭区": "330110",
+                "富阳区": "330111",
+                "临安区": "330112",
+                "临平区": "330113",
+                "钱塘区": "330114",
+                "桐庐县": "330122",
+                "淳安县": "330127",
+                "建德市": "330182"
+                },
+                "宁波市": {
+                "海曙区": "330203",
+                "江北区": "330205",
+                "北仑区": "330206",
+                "镇海区": "330211",
+                "鄞州区": "330212",
+                "奉化区": "330213",
+                "象山县": "330225",
+                "宁海县": "330226",
+                "余姚市": "330281",
+                "慈溪市": "330282"
+                },
+                "温州市": {
+                "鹿城区": "330302",
+                "龙湾区": "330303",
+                "瓯海区": "330304",
+                "洞头区": "330305",
+                "永嘉县": "330324",
+                "平阳县": "330326",
+                "苍南县": "330327",
+                "文成县": "330328",
+                "泰顺县": "330329",
+                "瑞安市": "330381",
+                "乐清市": "330382",
+                "龙港市": "330383"
+                },
+                "嘉兴市": {
+                "南湖区": "330402",
+                "秀洲区": "330411",
+                "嘉善县": "330421",
+                "海盐县": "330424",
+                "海宁市": "330481",
+                "平湖市": "330482",
+                "桐乡市": "330483"
+                },
+                "湖州市": {
+                "吴兴区": "330502",
+                "南浔区": "330503",
+                "德清县": "330521",
+                "长兴县": "330522",
+                "安吉县": "330523"
+                },
+                "绍兴市": {
+                "越城区": "330602",
+                "柯桥区": "330603",
+                "上虞区": "330604",
+                "新昌县": "330624",
+                "诸暨市": "330681",
+                "嵊州市": "330683"
+                },
+                "金华市": {
+                "婺城区": "330702",
+                "金东区": "330703",
+                "武义县": "330723",
+                "浦江县": "330726",
+                "磐安县": "330727",
+                "兰溪市": "330781",
+                "义乌市": "330782",
+                "东阳市": "330783",
+                "永康市": "330784"
+                },
+                "衢州市": {
+                "柯城区": "330802",
+                "衢江区": "330803",
+                "常山县": "330822",
+                "开化县": "330824",
+                "龙游县": "330825",
+                "江山市": "330881"
+                },
+                "舟山市": {
+                "定海区": "330902",
+                "普陀区": "330903",
+                "岱山县": "330921",
+                "嵊泗县": "330922"
+                },
+                "台州市": {
+                "椒江区": "331002",
+                "黄岩区": "331003",
+                "路桥区": "331004",
+                "三门县": "331022",
+                "天台县": "331023",
+                "仙居县": "331024",
+                "温岭市": "331081",
+                "临海市": "331082",
+                "玉环市": "331083"
+                },
+                "丽水市": {
+                "莲都区": "331102",
+                "青田县": "331121",
+                "缙云县": "331122",
+                "遂昌县": "331123",
+                "松阳县": "331124",
+                "云和县": "331125",
+                "庆元县": "331126",
+                "景宁畲族自治县": "331127",
+                "龙泉市": "331181"
+                }
+            },
+            "安徽省": {
+                "合肥市": {
+                "瑶海区": "340102",
+                "庐阳区": "340103",
+                "蜀山区": "340104",
+                "包河区": "340111",
+                "长丰县": "340121",
+                "肥东县": "340122",
+                "肥西县": "340123",
+                "庐江县": "340124",
+                "合肥高新技术产业开发区": "340176",
+                "合肥经济技术开发区": "340177",
+                "合肥新站高新技术产业开发区": "340178",
+                "巢湖市": "340181"
+                },
+                "芜湖市": {
+                "镜湖区": "340202",
+                "鸠江区": "340207",
+                "弋江区": "340209",
+                "湾沚区": "340210",
+                "繁昌区": "340212",
+                "南陵县": "340223",
+                "芜湖经济技术开发区": "340271",
+                "安徽芜湖三山经济开发区": "340272",
+                "无为市": "340281"
+                },
+                "蚌埠市": {
+                "龙子湖区": "340302",
+                "蚌山区": "340303",
+                "禹会区": "340304",
+                "淮上区": "340311",
+                "怀远县": "340321",
+                "五河县": "340322",
+                "固镇县": "340323",
+                "蚌埠市高新技术开发区": "340371",
+                "蚌埠市经济开发区": "340372"
+                },
+                "淮南市": {
+                "大通区": "340402",
+                "田家庵区": "340403",
+                "谢家集区": "340404",
+                "八公山区": "340405",
+                "潘集区": "340406",
+                "凤台县": "340421",
+                "寿县": "340422"
+                },
+                "马鞍山市": {
+                "花山区": "340503",
+                "雨山区": "340504",
+                "博望区": "340506",
+                "当涂县": "340521",
+                "含山县": "340522",
+                "和县": "340523"
+                },
+                "淮北市": {
+                "杜集区": "340602",
+                "相山区": "340603",
+                "烈山区": "340604",
+                "濉溪县": "340621"
+                },
+                "铜陵市": {
+                "铜官区": "340705",
+                "义安区": "340706",
+                "郊区": "340711",
+                "枞阳县": "340722"
+                },
+                "安庆市": {
+                "迎江区": "340802",
+                "大观区": "340803",
+                "宜秀区": "340811",
+                "怀宁县": "340822",
+                "太湖县": "340825",
+                "宿松县": "340826",
+                "望江县": "340827",
+                "岳西县": "340828",
+                "安徽安庆经济开发区": "340871",
+                "桐城市": "340881",
+                "潜山市": "340882"
+                },
+                "黄山市": {
+                "屯溪区": "341002",
+                "黄山区": "341003",
+                "徽州区": "341004",
+                "歙县": "341021",
+                "休宁县": "341022",
+                "黟县": "341023",
+                "祁门县": "341024"
+                },
+                "滁州市": {
+                "琅琊区": "341102",
+                "南谯区": "341103",
+                "来安县": "341122",
+                "全椒县": "341124",
+                "定远县": "341125",
+                "凤阳县": "341126",
+                "中新苏滁高新技术产业开发区": "341171",
+                "滁州经济技术开发区": "341172",
+                "天长市": "341181",
+                "明光市": "341182"
+                },
+                "阜阳市": {
+                "颍州区": "341202",
+                "颍东区": "341203",
+                "颍泉区": "341204",
+                "临泉县": "341221",
+                "太和县": "341222",
+                "阜南县": "341225",
+                "颍上县": "341226",
+                "阜阳合肥现代产业园区": "341271",
+                "阜阳经济技术开发区": "341272",
+                "界首市": "341282"
+                },
+                "宿州市": {
+                "埇桥区": "341302",
+                "砀山县": "341321",
+                "萧县": "341322",
+                "灵璧县": "341323",
+                "泗县": "341324",
+                "宿州马鞍山现代产业园区": "341371",
+                "宿州经济技术开发区": "341372"
+                },
+                "六安市": {
+                "金安区": "341502",
+                "裕安区": "341503",
+                "叶集区": "341504",
+                "霍邱县": "341522",
+                "舒城县": "341523",
+                "金寨县": "341524",
+                "霍山县": "341525"
+                },
+                "亳州市": {
+                "谯城区": "341602",
+                "涡阳县": "341621",
+                "蒙城县": "341622",
+                "利辛县": "341623"
+                },
+                "池州市": {
+                "贵池区": "341702",
+                "东至县": "341721",
+                "石台县": "341722",
+                "青阳县": "341723"
+                },
+                "宣城市": {
+                "宣州区": "341802",
+                "郎溪县": "341821",
+                "泾县": "341823",
+                "绩溪县": "341824",
+                "旌德县": "341825",
+                "宣城市经济开发区": "341871",
+                "宁国市": "341881",
+                "广德市": "341882"
+                }
+            },
+            "福建省": {
+                "福州市": {
+                "鼓楼区": "350102",
+                "台江区": "350103",
+                "仓山区": "350104",
+                "马尾区": "350105",
+                "晋安区": "350111",
+                "长乐区": "350112",
+                "闽侯县": "350121",
+                "连江县": "350122",
+                "罗源县": "350123",
+                "闽清县": "350124",
+                "永泰县": "350125",
+                "平潭县": "350128",
+                "福清市": "350181"
+                },
+                "厦门市": {
+                "思明区": "350203",
+                "海沧区": "350205",
+                "湖里区": "350206",
+                "集美区": "350211",
+                "同安区": "350212",
+                "翔安区": "350213"
+                },
+                "莆田市": {
+                "城厢区": "350302",
+                "涵江区": "350303",
+                "荔城区": "350304",
+                "秀屿区": "350305",
+                "仙游县": "350322"
+                },
+                "三明市": {
+                "三元区": "350404",
+                "沙县区": "350405",
+                "明溪县": "350421",
+                "清流县": "350423",
+                "宁化县": "350424",
+                "大田县": "350425",
+                "尤溪县": "350426",
+                "将乐县": "350428",
+                "泰宁县": "350429",
+                "建宁县": "350430",
+                "永安市": "350481"
+                },
+                "泉州市": {
+                "鲤城区": "350502",
+                "丰泽区": "350503",
+                "洛江区": "350504",
+                "泉港区": "350505",
+                "惠安县": "350521",
+                "安溪县": "350524",
+                "永春县": "350525",
+                "德化县": "350526",
+                "金门县": "350527",
+                "石狮市": "350581",
+                "晋江市": "350582",
+                "南安市": "350583"
+                },
+                "漳州市": {
+                "芗城区": "350602",
+                "龙文区": "350603",
+                "龙海区": "350604",
+                "长泰区": "350605",
+                "云霄县": "350622",
+                "漳浦县": "350623",
+                "诏安县": "350624",
+                "东山县": "350626",
+                "南靖县": "350627",
+                "平和县": "350628",
+                "华安县": "350629"
+                },
+                "南平市": {
+                "延平区": "350702",
+                "建阳区": "350703",
+                "顺昌县": "350721",
+                "浦城县": "350722",
+                "光泽县": "350723",
+                "松溪县": "350724",
+                "政和县": "350725",
+                "邵武市": "350781",
+                "武夷山市": "350782",
+                "建瓯市": "350783"
+                },
+                "龙岩市": {
+                "新罗区": "350802",
+                "永定区": "350803",
+                "长汀县": "350821",
+                "上杭县": "350823",
+                "武平县": "350824",
+                "连城县": "350825",
+                "漳平市": "350881"
+                },
+                "宁德市": {
+                "蕉城区": "350902",
+                "霞浦县": "350921",
+                "古田县": "350922",
+                "屏南县": "350923",
+                "寿宁县": "350924",
+                "周宁县": "350925",
+                "柘荣县": "350926",
+                "福安市": "350981",
+                "福鼎市": "350982"
+                }
+            },
+            "江西省": {
+                "南昌市": {
+                "东湖区": "360102",
+                "西湖区": "360103",
+                "青云谱区": "360104",
+                "青山湖区": "360111",
+                "新建区": "360112",
+                "红谷滩区": "360113",
+                "南昌县": "360121",
+                "安义县": "360123",
+                "进贤县": "360124"
+                },
+                "景德镇市": {
+                "昌江区": "360202",
+                "珠山区": "360203",
+                "浮梁县": "360222",
+                "乐平市": "360281"
+                },
+                "萍乡市": {
+                "安源区": "360302",
+                "湘东区": "360313",
+                "莲花县": "360321",
+                "上栗县": "360322",
+                "芦溪县": "360323"
+                },
+                "九江市": {
+                "濂溪区": "360402",
+                "浔阳区": "360403",
+                "柴桑区": "360404",
+                "武宁县": "360423",
+                "修水县": "360424",
+                "永修县": "360425",
+                "德安县": "360426",
+                "都昌县": "360428",
+                "湖口县": "360429",
+                "彭泽县": "360430",
+                "瑞昌市": "360481",
+                "共青城市": "360482",
+                "庐山市": "360483"
+                },
+                "新余市": {
+                "渝水区": "360502",
+                "分宜县": "360521"
+                },
+                "鹰潭市": {
+                "月湖区": "360602",
+                "余江区": "360603",
+                "贵溪市": "360681"
+                },
+                "赣州市": {
+                "章贡区": "360702",
+                "南康区": "360703",
+                "赣县区": "360704",
+                "信丰县": "360722",
+                "大余县": "360723",
+                "上犹县": "360724",
+                "崇义县": "360725",
+                "安远县": "360726",
+                "定南县": "360728",
+                "全南县": "360729",
+                "宁都县": "360730",
+                "于都县": "360731",
+                "兴国县": "360732",
+                "会昌县": "360733",
+                "寻乌县": "360734",
+                "石城县": "360735",
+                "瑞金市": "360781",
+                "龙南市": "360783"
+                },
+                "吉安市": {
+                "吉州区": "360802",
+                "青原区": "360803",
+                "吉安县": "360821",
+                "吉水县": "360822",
+                "峡江县": "360823",
+                "新干县": "360824",
+                "永丰县": "360825",
+                "泰和县": "360826",
+                "遂川县": "360827",
+                "万安县": "360828",
+                "安福县": "360829",
+                "永新县": "360830",
+                "井冈山市": "360881"
+                },
+                "宜春市": {
+                "袁州区": "360902",
+                "奉新县": "360921",
+                "万载县": "360922",
+                "上高县": "360923",
+                "宜丰县": "360924",
+                "靖安县": "360925",
+                "铜鼓县": "360926",
+                "丰城市": "360981",
+                "樟树市": "360982",
+                "高安市": "360983"
+                },
+                "抚州市": {
+                "临川区": "361002",
+                "东乡区": "361003",
+                "南城县": "361021",
+                "黎川县": "361022",
+                "南丰县": "361023",
+                "崇仁县": "361024",
+                "乐安县": "361025",
+                "宜黄县": "361026",
+                "金溪县": "361027",
+                "资溪县": "361028",
+                "广昌县": "361030"
+                },
+                "上饶市": {
+                "信州区": "361102",
+                "广丰区": "361103",
+                "广信区": "361104",
+                "玉山县": "361123",
+                "铅山县": "361124",
+                "横峰县": "361125",
+                "弋阳县": "361126",
+                "余干县": "361127",
+                "鄱阳县": "361128",
+                "万年县": "361129",
+                "婺源县": "361130",
+                "德兴市": "361181"
+                }
+            },
+            "山东省": {
+                "济南市": {
+                "历下区": "370102",
+                "市中区": "370103",
+                "槐荫区": "370104",
+                "天桥区": "370105",
+                "历城区": "370112",
+                "长清区": "370113",
+                "章丘区": "370114",
+                "济阳区": "370115",
+                "莱芜区": "370116",
+                "钢城区": "370117",
+                "平阴县": "370124",
+                "商河县": "370126",
+                "济南高新技术产业开发区": "370176"
+                },
+                "青岛市": {
+                "市南区": "370202",
+                "市北区": "370203",
+                "黄岛区": "370211",
+                "崂山区": "370212",
+                "李沧区": "370213",
+                "城阳区": "370214",
+                "即墨区": "370215",
+                "胶州市": "370281",
+                "平度市": "370283",
+                "莱西市": "370285"
+                },
+                "淄博市": {
+                "淄川区": "370302",
+                "张店区": "370303",
+                "博山区": "370304",
+                "临淄区": "370305",
+                "周村区": "370306",
+                "桓台县": "370321",
+                "高青县": "370322",
+                "沂源县": "370323"
+                },
+                "枣庄市": {
+                "市中区": "370402",
+                "薛城区": "370403",
+                "峄城区": "370404",
+                "台儿庄区": "370405",
+                "山亭区": "370406",
+                "滕州市": "370481"
+                },
+                "东营市": {
+                "东营区": "370502",
+                "河口区": "370503",
+                "垦利区": "370505",
+                "利津县": "370522",
+                "广饶县": "370523",
+                "东营经济技术开发区": "370571",
+                "东营港经济开发区": "370572"
+                },
+                "烟台市": {
+                "芝罘区": "370602",
+                "福山区": "370611",
+                "牟平区": "370612",
+                "莱山区": "370613",
+                "蓬莱区": "370614",
+                "烟台高新技术产业开发区": "370671",
+                "烟台经济技术开发区": "370676",
+                "龙口市": "370681",
+                "莱阳市": "370682",
+                "莱州市": "370683",
+                "招远市": "370685",
+                "栖霞市": "370686",
+                "海阳市": "370687"
+                },
+                "潍坊市": {
+                "潍城区": "370702",
+                "寒亭区": "370703",
+                "坊子区": "370704",
+                "奎文区": "370705",
+                "临朐县": "370724",
+                "昌乐县": "370725",
+                "潍坊滨海经济技术开发区": "370772",
+                "青州市": "370781",
+                "诸城市": "370782",
+                "寿光市": "370783",
+                "安丘市": "370784",
+                "高密市": "370785",
+                "昌邑市": "370786"
+                },
+                "济宁市": {
+                "任城区": "370811",
+                "兖州区": "370812",
+                "微山县": "370826",
+                "鱼台县": "370827",
+                "金乡县": "370828",
+                "嘉祥县": "370829",
+                "汶上县": "370830",
+                "泗水县": "370831",
+                "梁山县": "370832",
+                "济宁高新技术产业开发区": "370871",
+                "曲阜市": "370881",
+                "邹城市": "370883"
+                },
+                "泰安市": {
+                "泰山区": "370902",
+                "岱岳区": "370911",
+                "宁阳县": "370921",
+                "东平县": "370923",
+                "新泰市": "370982",
+                "肥城市": "370983"
+                },
+                "威海市": {
+                "环翠区": "371002",
+                "文登区": "371003",
+                "威海火炬高技术产业开发区": "371071",
+                "威海经济技术开发区": "371072",
+                "威海临港经济技术开发区": "371073",
+                "荣成市": "371082",
+                "乳山市": "371083"
+                },
+                "日照市": {
+                "东港区": "371102",
+                "岚山区": "371103",
+                "五莲县": "371121",
+                "莒县": "371122",
+                "日照经济技术开发区": "371171"
+                },
+                "临沂市": {
+                "兰山区": "371302",
+                "罗庄区": "371311",
+                "河东区": "371312",
+                "沂南县": "371321",
+                "郯城县": "371322",
+                "沂水县": "371323",
+                "兰陵县": "371324",
+                "费县": "371325",
+                "平邑县": "371326",
+                "莒南县": "371327",
+                "蒙阴县": "371328",
+                "临沭县": "371329",
+                "临沂高新技术产业开发区": "371371"
+                },
+                "德州市": {
+                "德城区": "371402",
+                "陵城区": "371403",
+                "宁津县": "371422",
+                "庆云县": "371423",
+                "临邑县": "371424",
+                "齐河县": "371425",
+                "平原县": "371426",
+                "夏津县": "371427",
+                "武城县": "371428",
+                "德州天衢新区": "371471",
+                "乐陵市": "371481",
+                "禹城市": "371482"
+                },
+                "聊城市": {
+                "东昌府区": "371502",
+                "茌平区": "371503",
+                "阳谷县": "371521",
+                "莘县": "371522",
+                "东阿县": "371524",
+                "冠县": "371525",
+                "高唐县": "371526",
+                "临清市": "371581"
+                },
+                "滨州市": {
+                "滨城区": "371602",
+                "沾化区": "371603",
+                "惠民县": "371621",
+                "阳信县": "371622",
+                "无棣县": "371623",
+                "博兴县": "371625",
+                "邹平市": "371681"
+                },
+                "菏泽市": {
+                "牡丹区": "371702",
+                "定陶区": "371703",
+                "曹县": "371721",
+                "单县": "371722",
+                "成武县": "371723",
+                "巨野县": "371724",
+                "郓城县": "371725",
+                "鄄城县": "371726",
+                "东明县": "371728",
+                "菏泽经济技术开发区": "371771",
+                "菏泽高新技术开发区": "371772"
+                }
+            },
+            "河南省": {
+                "郑州市": {
+                "中原区": "410102",
+                "二七区": "410103",
+                "管城回族区": "410104",
+                "金水区": "410105",
+                "上街区": "410106",
+                "惠济区": "410108",
+                "中牟县": "410122",
+                "郑州经济技术开发区": "410171",
+                "郑州高新技术产业开发区": "410172",
+                "郑州航空港经济综合实验区": "410173",
+                "巩义市": "410181",
+                "荥阳市": "410182",
+                "新密市": "410183",
+                "新郑市": "410184",
+                "登封市": "410185"
+                },
+                "开封市": {
+                "龙亭区": "410202",
+                "顺河回族区": "410203",
+                "鼓楼区": "410204",
+                "禹王台区": "410205",
+                "祥符区": "410212",
+                "杞县": "410221",
+                "通许县": "410222",
+                "尉氏县": "410223",
+                "兰考县": "410225"
+                },
+                "洛阳市": {
+                "老城区": "410302",
+                "西工区": "410303",
+                "瀍河回族区": "410304",
+                "涧西区": "410305",
+                "偃师区": "410307",
+                "孟津区": "410308",
+                "洛龙区": "410311",
+                "新安县": "410323",
+                "栾川县": "410324",
+                "嵩县": "410325",
+                "汝阳县": "410326",
+                "宜阳县": "410327",
+                "洛宁县": "410328",
+                "伊川县": "410329",
+                "洛阳高新技术产业开发区": "410371"
+                },
+                "平顶山市": {
+                "新华区": "410402",
+                "卫东区": "410403",
+                "石龙区": "410404",
+                "湛河区": "410411",
+                "宝丰县": "410421",
+                "叶县": "410422",
+                "鲁山县": "410423",
+                "郏县": "410425",
+                "平顶山高新技术产业开发区": "410471",
+                "平顶山市城乡一体化示范区": "410472",
+                "舞钢市": "410481",
+                "汝州市": "410482"
+                },
+                "安阳市": {
+                "文峰区": "410502",
+                "北关区": "410503",
+                "殷都区": "410505",
+                "龙安区": "410506",
+                "安阳县": "410522",
+                "汤阴县": "410523",
+                "滑县": "410526",
+                "内黄县": "410527",
+                "安阳高新技术产业开发区": "410571",
+                "林州市": "410581"
+                },
+                "鹤壁市": {
+                "鹤山区": "410602",
+                "山城区": "410603",
+                "淇滨区": "410611",
+                "浚县": "410621",
+                "淇县": "410622",
+                "鹤壁经济技术开发区": "410671"
+                },
+                "新乡市": {
+                "红旗区": "410702",
+                "卫滨区": "410703",
+                "凤泉区": "410704",
+                "牧野区": "410711",
+                "新乡县": "410721",
+                "获嘉县": "410724",
+                "原阳县": "410725",
+                "延津县": "410726",
+                "封丘县": "410727",
+                "新乡高新技术产业开发区": "410771",
+                "新乡经济技术开发区": "410772",
+                "新乡市平原城乡一体化示范区": "410773",
+                "卫辉市": "410781",
+                "辉县市": "410782",
+                "长垣市": "410783"
+                },
+                "焦作市": {
+                "解放区": "410802",
+                "中站区": "410803",
+                "马村区": "410804",
+                "山阳区": "410811",
+                "修武县": "410821",
+                "博爱县": "410822",
+                "武陟县": "410823",
+                "温县": "410825",
+                "焦作城乡一体化示范区": "410871",
+                "沁阳市": "410882",
+                "孟州市": "410883"
+                },
+                "濮阳市": {
+                "华龙区": "410902",
+                "清丰县": "410922",
+                "南乐县": "410923",
+                "范县": "410926",
+                "台前县": "410927",
+                "濮阳县": "410928",
+                "河南濮阳工业园区": "410971",
+                "濮阳经济技术开发区": "410972"
+                },
+                "许昌市": {
+                "魏都区": "411002",
+                "建安区": "411003",
+                "鄢陵县": "411024",
+                "襄城县": "411025",
+                "许昌经济技术开发区": "411071",
+                "禹州市": "411081",
+                "长葛市": "411082"
+                },
+                "漯河市": {
+                "源汇区": "411102",
+                "郾城区": "411103",
+                "召陵区": "411104",
+                "舞阳县": "411121",
+                "临颍县": "411122",
+                "漯河经济技术开发区": "411171"
+                },
+                "三门峡市": {
+                "湖滨区": "411202",
+                "陕州区": "411203",
+                "渑池县": "411221",
+                "卢氏县": "411224",
+                "河南三门峡经济开发区": "411271",
+                "义马市": "411281",
+                "灵宝市": "411282"
+                },
+                "南阳市": {
+                "宛城区": "411302",
+                "卧龙区": "411303",
+                "南召县": "411321",
+                "方城县": "411322",
+                "西峡县": "411323",
+                "镇平县": "411324",
+                "内乡县": "411325",
+                "淅川县": "411326",
+                "社旗县": "411327",
+                "唐河县": "411328",
+                "新野县": "411329",
+                "桐柏县": "411330",
+                "南阳高新技术产业开发区": "411371",
+                "南阳市城乡一体化示范区": "411372",
+                "邓州市": "411381"
+                },
+                "商丘市": {
+                "梁园区": "411402",
+                "睢阳区": "411403",
+                "民权县": "411421",
+                "睢县": "411422",
+                "宁陵县": "411423",
+                "柘城县": "411424",
+                "虞城县": "411425",
+                "夏邑县": "411426",
+                "豫东综合物流产业聚集区": "411471",
+                "河南商丘经济开发区": "411472",
+                "永城市": "411481"
+                },
+                "信阳市": {
+                "浉河区": "411502",
+                "平桥区": "411503",
+                "罗山县": "411521",
+                "光山县": "411522",
+                "新县": "411523",
+                "商城县": "411524",
+                "固始县": "411525",
+                "潢川县": "411526",
+                "淮滨县": "411527",
+                "息县": "411528",
+                "信阳高新技术产业开发区": "411571"
+                },
+                "周口市": {
+                "川汇区": "411602",
+                "淮阳区": "411603",
+                "扶沟县": "411621",
+                "西华县": "411622",
+                "商水县": "411623",
+                "沈丘县": "411624",
+                "郸城县": "411625",
+                "太康县": "411627",
+                "鹿邑县": "411628",
+                "周口临港开发区": "411671",
+                "项城市": "411681"
+                },
+                "驻马店市": {
+                "驿城区": "411702",
+                "西平县": "411721",
+                "上蔡县": "411722",
+                "平舆县": "411723",
+                "正阳县": "411724",
+                "确山县": "411725",
+                "泌阳县": "411726",
+                "汝南县": "411727",
+                "遂平县": "411728",
+                "新蔡县": "411729",
+                "河南驻马店经济开发区": "411771"
+                },
+                "省直辖县级行政区划": {
+                "济源市": "419001"
+                }
+            },
+            "湖北省": {
+                "武汉市": {
+                "江岸区": "420102",
+                "江汉区": "420103",
+                "硚口区": "420104",
+                "汉阳区": "420105",
+                "武昌区": "420106",
+                "青山区": "420107",
+                "洪山区": "420111",
+                "东西湖区": "420112",
+                "汉南区": "420113",
+                "蔡甸区": "420114",
+                "江夏区": "420115",
+                "黄陂区": "420116",
+                "新洲区": "420117"
+                },
+                "黄石市": {
+                "黄石港区": "420202",
+                "西塞山区": "420203",
+                "下陆区": "420204",
+                "铁山区": "420205",
+                "阳新县": "420222",
+                "大冶市": "420281"
+                },
+                "十堰市": {
+                "茅箭区": "420302",
+                "张湾区": "420303",
+                "郧阳区": "420304",
+                "郧西县": "420322",
+                "竹山县": "420323",
+                "竹溪县": "420324",
+                "房县": "420325",
+                "丹江口市": "420381"
+                },
+                "宜昌市": {
+                "西陵区": "420502",
+                "伍家岗区": "420503",
+                "点军区": "420504",
+                "猇亭区": "420505",
+                "夷陵区": "420506",
+                "远安县": "420525",
+                "兴山县": "420526",
+                "秭归县": "420527",
+                "长阳土家族自治县": "420528",
+                "五峰土家族自治县": "420529",
+                "宜都市": "420581",
+                "当阳市": "420582",
+                "枝江市": "420583"
+                },
+                "襄阳市": {
+                "襄城区": "420602",
+                "樊城区": "420606",
+                "襄州区": "420607",
+                "南漳县": "420624",
+                "谷城县": "420625",
+                "保康县": "420626",
+                "老河口市": "420682",
+                "枣阳市": "420683",
+                "宜城市": "420684"
+                },
+                "鄂州市": {
+                "梁子湖区": "420702",
+                "华容区": "420703",
+                "鄂城区": "420704"
+                },
+                "荆门市": {
+                "东宝区": "420802",
+                "掇刀区": "420804",
+                "沙洋县": "420822",
+                "钟祥市": "420881",
+                "京山市": "420882"
+                },
+                "孝感市": {
+                "孝南区": "420902",
+                "孝昌县": "420921",
+                "大悟县": "420922",
+                "云梦县": "420923",
+                "应城市": "420981",
+                "安陆市": "420982",
+                "汉川市": "420984"
+                },
+                "荆州市": {
+                "沙市区": "421002",
+                "荆州区": "421003",
+                "公安县": "421022",
+                "江陵县": "421024",
+                "荆州经济技术开发区": "421071",
+                "石首市": "421081",
+                "洪湖市": "421083",
+                "松滋市": "421087",
+                "监利市": "421088"
+                },
+                "黄冈市": {
+                "黄州区": "421102",
+                "团风县": "421121",
+                "红安县": "421122",
+                "罗田县": "421123",
+                "英山县": "421124",
+                "浠水县": "421125",
+                "蕲春县": "421126",
+                "黄梅县": "421127",
+                "龙感湖管理区": "421171",
+                "麻城市": "421181",
+                "武穴市": "421182"
+                },
+                "咸宁市": {
+                "咸安区": "421202",
+                "嘉鱼县": "421221",
+                "通城县": "421222",
+                "崇阳县": "421223",
+                "通山县": "421224",
+                "赤壁市": "421281"
+                },
+                "随州市": {
+                "曾都区": "421303",
+                "随县": "421321",
+                "广水市": "421381"
+                },
+                "恩施土家族苗族自治州": {
+                "恩施市": "422801",
+                "利川市": "422802",
+                "建始县": "422822",
+                "巴东县": "422823",
+                "宣恩县": "422825",
+                "咸丰县": "422826",
+                "来凤县": "422827",
+                "鹤峰县": "422828"
+                },
+                "省直辖县级行政区划": {
+                "仙桃市": "429004",
+                "潜江市": "429005",
+                "天门市": "429006",
+                "神农架林区": "429021"
+                }
+            },
+            "湖南省": {
+                "长沙市": {
+                "芙蓉区": "430102",
+                "天心区": "430103",
+                "岳麓区": "430104",
+                "开福区": "430105",
+                "雨花区": "430111",
+                "望城区": "430112",
+                "长沙县": "430121",
+                "浏阳市": "430181",
+                "宁乡市": "430182"
+                },
+                "株洲市": {
+                "荷塘区": "430202",
+                "芦淞区": "430203",
+                "石峰区": "430204",
+                "天元区": "430211",
+                "渌口区": "430212",
+                "攸县": "430223",
+                "茶陵县": "430224",
+                "炎陵县": "430225",
+                "醴陵市": "430281"
+                },
+                "湘潭市": {
+                "雨湖区": "430302",
+                "岳塘区": "430304",
+                "湘潭县": "430321",
+                "湖南湘潭高新技术产业园区": "430371",
+                "湘潭昭山示范区": "430372",
+                "湘潭九华示范区": "430373",
+                "湘乡市": "430381",
+                "韶山市": "430382"
+                },
+                "衡阳市": {
+                "珠晖区": "430405",
+                "雁峰区": "430406",
+                "石鼓区": "430407",
+                "蒸湘区": "430408",
+                "南岳区": "430412",
+                "衡阳县": "430421",
+                "衡南县": "430422",
+                "衡山县": "430423",
+                "衡东县": "430424",
+                "祁东县": "430426",
+                "湖南衡阳松木经济开发区": "430473",
+                "湖南衡阳高新技术产业园区": "430476",
+                "耒阳市": "430481",
+                "常宁市": "430482"
+                },
+                "邵阳市": {
+                "双清区": "430502",
+                "大祥区": "430503",
+                "北塔区": "430511",
+                "新邵县": "430522",
+                "邵阳县": "430523",
+                "隆回县": "430524",
+                "洞口县": "430525",
+                "绥宁县": "430527",
+                "新宁县": "430528",
+                "城步苗族自治县": "430529",
+                "武冈市": "430581",
+                "邵东市": "430582"
+                },
+                "岳阳市": {
+                "岳阳楼区": "430602",
+                "云溪区": "430603",
+                "君山区": "430611",
+                "岳阳县": "430621",
+                "华容县": "430623",
+                "湘阴县": "430624",
+                "平江县": "430626",
+                "岳阳市屈原管理区": "430671",
+                "汨罗市": "430681",
+                "临湘市": "430682"
+                },
+                "常德市": {
+                "武陵区": "430702",
+                "鼎城区": "430703",
+                "安乡县": "430721",
+                "汉寿县": "430722",
+                "澧县": "430723",
+                "临澧县": "430724",
+                "桃源县": "430725",
+                "石门县": "430726",
+                "常德市西洞庭管理区": "430771",
+                "津市市": "430781"
+                },
+                "张家界市": {
+                "永定区": "430802",
+                "武陵源区": "430811",
+                "慈利县": "430821",
+                "桑植县": "430822"
+                },
+                "益阳市": {
+                "资阳区": "430902",
+                "赫山区": "430903",
+                "南县": "430921",
+                "桃江县": "430922",
+                "安化县": "430923",
+                "益阳市大通湖管理区": "430971",
+                "湖南益阳高新技术产业园区": "430972",
+                "沅江市": "430981"
+                },
+                "郴州市": {
+                "北湖区": "431002",
+                "苏仙区": "431003",
+                "桂阳县": "431021",
+                "宜章县": "431022",
+                "永兴县": "431023",
+                "嘉禾县": "431024",
+                "临武县": "431025",
+                "汝城县": "431026",
+                "桂东县": "431027",
+                "安仁县": "431028",
+                "资兴市": "431081"
+                },
+                "永州市": {
+                "零陵区": "431102",
+                "冷水滩区": "431103",
+                "东安县": "431122",
+                "双牌县": "431123",
+                "道县": "431124",
+                "江永县": "431125",
+                "宁远县": "431126",
+                "蓝山县": "431127",
+                "新田县": "431128",
+                "江华瑶族自治县": "431129",
+                "永州经济技术开发区": "431171",
+                "永州市回龙圩管理区": "431173",
+                "祁阳市": "431181"
+                },
+                "怀化市": {
+                "鹤城区": "431202",
+                "中方县": "431221",
+                "沅陵县": "431222",
+                "辰溪县": "431223",
+                "溆浦县": "431224",
+                "会同县": "431225",
+                "麻阳苗族自治县": "431226",
+                "新晃侗族自治县": "431227",
+                "芷江侗族自治县": "431228",
+                "靖州苗族侗族自治县": "431229",
+                "通道侗族自治县": "431230",
+                "怀化市洪江管理区": "431271",
+                "洪江市": "431281"
+                },
+                "娄底市": {
+                "娄星区": "431302",
+                "双峰县": "431321",
+                "新化县": "431322",
+                "冷水江市": "431381",
+                "涟源市": "431382"
+                },
+                "湘西土家族苗族自治州": {
+                "吉首市": "433101",
+                "泸溪县": "433122",
+                "凤凰县": "433123",
+                "花垣县": "433124",
+                "保靖县": "433125",
+                "古丈县": "433126",
+                "永顺县": "433127",
+                "龙山县": "433130"
+                }
+            },
+            "广东省": {
+                "广州市": {
+                "荔湾区": "440103",
+                "越秀区": "440104",
+                "海珠区": "440105",
+                "天河区": "440106",
+                "白云区": "440111",
+                "黄埔区": "440112",
+                "番禺区": "440113",
+                "花都区": "440114",
+                "南沙区": "440115",
+                "从化区": "440117",
+                "增城区": "440118"
+                },
+                "韶关市": {
+                "武江区": "440203",
+                "浈江区": "440204",
+                "曲江区": "440205",
+                "始兴县": "440222",
+                "仁化县": "440224",
+                "翁源县": "440229",
+                "乳源瑶族自治县": "440232",
+                "新丰县": "440233",
+                "乐昌市": "440281",
+                "南雄市": "440282"
+                },
+                "深圳市": {
+                "罗湖区": "440303",
+                "福田区": "440304",
+                "南山区": "440305",
+                "宝安区": "440306",
+                "龙岗区": "440307",
+                "盐田区": "440308",
+                "龙华区": "440309",
+                "坪山区": "440310",
+                "光明区": "440311"
+                },
+                "珠海市": {
+                "香洲区": "440402",
+                "斗门区": "440403",
+                "金湾区": "440404"
+                },
+                "汕头市": {
+                "龙湖区": "440507",
+                "金平区": "440511",
+                "濠江区": "440512",
+                "潮阳区": "440513",
+                "潮南区": "440514",
+                "澄海区": "440515",
+                "南澳县": "440523"
+                },
+                "佛山市": {
+                "禅城区": "440604",
+                "南海区": "440605",
+                "顺德区": "440606",
+                "三水区": "440607",
+                "高明区": "440608"
+                },
+                "江门市": {
+                "蓬江区": "440703",
+                "江海区": "440704",
+                "新会区": "440705",
+                "台山市": "440781",
+                "开平市": "440783",
+                "鹤山市": "440784",
+                "恩平市": "440785"
+                },
+                "湛江市": {
+                "赤坎区": "440802",
+                "霞山区": "440803",
+                "坡头区": "440804",
+                "麻章区": "440811",
+                "遂溪县": "440823",
+                "徐闻县": "440825",
+                "廉江市": "440881",
+                "雷州市": "440882",
+                "吴川市": "440883"
+                },
+                "茂名市": {
+                "茂南区": "440902",
+                "电白区": "440904",
+                "高州市": "440981",
+                "化州市": "440982",
+                "信宜市": "440983"
+                },
+                "肇庆市": {
+                "端州区": "441202",
+                "鼎湖区": "441203",
+                "高要区": "441204",
+                "广宁县": "441223",
+                "怀集县": "441224",
+                "封开县": "441225",
+                "德庆县": "441226",
+                "四会市": "441284"
+                },
+                "惠州市": {
+                "惠城区": "441302",
+                "惠阳区": "441303",
+                "博罗县": "441322",
+                "惠东县": "441323",
+                "龙门县": "441324"
+                },
+                "梅州市": {
+                "梅江区": "441402",
+                "梅县区": "441403",
+                "大埔县": "441422",
+                "丰顺县": "441423",
+                "五华县": "441424",
+                "平远县": "441426",
+                "蕉岭县": "441427",
+                "兴宁市": "441481"
+                },
+                "汕尾市": {
+                "城区": "441502",
+                "海丰县": "441521",
+                "陆河县": "441523",
+                "陆丰市": "441581"
+                },
+                "河源市": {
+                "源城区": "441602",
+                "紫金县": "441621",
+                "龙川县": "441622",
+                "连平县": "441623",
+                "和平县": "441624",
+                "东源县": "441625"
+                },
+                "阳江市": {
+                "江城区": "441702",
+                "阳东区": "441704",
+                "阳西县": "441721",
+                "阳春市": "441781"
+                },
+                "清远市": {
+                "清城区": "441802",
+                "清新区": "441803",
+                "佛冈县": "441821",
+                "阳山县": "441823",
+                "连山壮族瑶族自治县": "441825",
+                "连南瑶族自治县": "441826",
+                "英德市": "441881",
+                "连州市": "441882"
+                },
+                "东莞市": {
+                "东莞市": "441900"
+                },
+                "中山市": {
+                "中山市": "442000"
+                },
+                "潮州市": {
+                "湘桥区": "445102",
+                "潮安区": "445103",
+                "饶平县": "445122"
+                },
+                "揭阳市": {
+                "榕城区": "445202",
+                "揭东区": "445203",
+                "揭西县": "445222",
+                "惠来县": "445224",
+                "普宁市": "445281"
+                },
+                "云浮市": {
+                "云城区": "445302",
+                "云安区": "445303",
+                "新兴县": "445321",
+                "郁南县": "445322",
+                "罗定市": "445381"
+                }
+            },
+            "广西壮族自治区": {
+                "南宁市": {
+                "兴宁区": "450102",
+                "青秀区": "450103",
+                "江南区": "450105",
+                "西乡塘区": "450107",
+                "良庆区": "450108",
+                "邕宁区": "450109",
+                "武鸣区": "450110",
+                "隆安县": "450123",
+                "马山县": "450124",
+                "上林县": "450125",
+                "宾阳县": "450126",
+                "横州市": "450181"
+                },
+                "柳州市": {
+                "城中区": "450202",
+                "鱼峰区": "450203",
+                "柳南区": "450204",
+                "柳北区": "450205",
+                "柳江区": "450206",
+                "柳城县": "450222",
+                "鹿寨县": "450223",
+                "融安县": "450224",
+                "融水苗族自治县": "450225",
+                "三江侗族自治县": "450226"
+                },
+                "桂林市": {
+                "秀峰区": "450302",
+                "叠彩区": "450303",
+                "象山区": "450304",
+                "七星区": "450305",
+                "雁山区": "450311",
+                "临桂区": "450312",
+                "阳朔县": "450321",
+                "灵川县": "450323",
+                "全州县": "450324",
+                "兴安县": "450325",
+                "永福县": "450326",
+                "灌阳县": "450327",
+                "龙胜各族自治县": "450328",
+                "资源县": "450329",
+                "平乐县": "450330",
+                "恭城瑶族自治县": "450332",
+                "荔浦市": "450381"
+                },
+                "梧州市": {
+                "万秀区": "450403",
+                "长洲区": "450405",
+                "龙圩区": "450406",
+                "苍梧县": "450421",
+                "藤县": "450422",
+                "蒙山县": "450423",
+                "岑溪市": "450481"
+                },
+                "北海市": {
+                "海城区": "450502",
+                "银海区": "450503",
+                "铁山港区": "450512",
+                "合浦县": "450521"
+                },
+                "防城港市": {
+                "港口区": "450602",
+                "防城区": "450603",
+                "上思县": "450621",
+                "东兴市": "450681"
+                },
+                "钦州市": {
+                "钦南区": "450702",
+                "钦北区": "450703",
+                "灵山县": "450721",
+                "浦北县": "450722"
+                },
+                "贵港市": {
+                "港北区": "450802",
+                "港南区": "450803",
+                "覃塘区": "450804",
+                "平南县": "450821",
+                "桂平市": "450881"
+                },
+                "玉林市": {
+                "玉州区": "450902",
+                "福绵区": "450903",
+                "容县": "450921",
+                "陆川县": "450922",
+                "博白县": "450923",
+                "兴业县": "450924",
+                "北流市": "450981"
+                },
+                "百色市": {
+                "右江区": "451002",
+                "田阳区": "451003",
+                "田东县": "451022",
+                "德保县": "451024",
+                "那坡县": "451026",
+                "凌云县": "451027",
+                "乐业县": "451028",
+                "田林县": "451029",
+                "西林县": "451030",
+                "隆林各族自治县": "451031",
+                "靖西市": "451081",
+                "平果市": "451082"
+                },
+                "贺州市": {
+                "八步区": "451102",
+                "平桂区": "451103",
+                "昭平县": "451121",
+                "钟山县": "451122",
+                "富川瑶族自治县": "451123"
+                },
+                "河池市": {
+                "金城江区": "451202",
+                "宜州区": "451203",
+                "南丹县": "451221",
+                "天峨县": "451222",
+                "凤山县": "451223",
+                "东兰县": "451224",
+                "罗城仫佬族自治县": "451225",
+                "环江毛南族自治县": "451226",
+                "巴马瑶族自治县": "451227",
+                "都安瑶族自治县": "451228",
+                "大化瑶族自治县": "451229"
+                },
+                "来宾市": {
+                "兴宾区": "451302",
+                "忻城县": "451321",
+                "象州县": "451322",
+                "武宣县": "451323",
+                "金秀瑶族自治县": "451324",
+                "合山市": "451381"
+                },
+                "崇左市": {
+                "江州区": "451402",
+                "扶绥县": "451421",
+                "宁明县": "451422",
+                "龙州县": "451423",
+                "大新县": "451424",
+                "天等县": "451425",
+                "凭祥市": "451481"
+                }
+            },
+            "海南省": {
+                "海口市": {
+                "秀英区": "460105",
+                "龙华区": "460106",
+                "琼山区": "460107",
+                "美兰区": "460108"
+                },
+                "三亚市": {
+                "海棠区": "460202",
+                "吉阳区": "460203",
+                "天涯区": "460204",
+                "崖州区": "460205"
+                },
+                "三沙市": {
+                "西沙群岛": "460321",
+                "南沙群岛": "460322",
+                "中沙群岛的岛礁及其海域": "460323"
+                },
+                "儋州市": {
+                "儋州市": "460400"
+                },
+                "省直辖县级行政区划": {
+                "五指山市": "469001",
+                "琼海市": "469002",
+                "文昌市": "469005",
+                "万宁市": "469006",
+                "东方市": "469007",
+                "定安县": "469021",
+                "屯昌县": "469022",
+                "澄迈县": "469023",
+                "临高县": "469024",
+                "白沙黎族自治县": "469025",
+                "昌江黎族自治县": "469026",
+                "乐东黎族自治县": "469027",
+                "陵水黎族自治县": "469028",
+                "保亭黎族苗族自治县": "469029",
+                "琼中黎族苗族自治县": "469030"
+                }
+            },
+            "四川省": {
+                "成都市": {
+                "锦江区": "510104",
+                "青羊区": "510105",
+                "金牛区": "510106",
+                "武侯区": "510107",
+                "成华区": "510108",
+                "龙泉驿区": "510112",
+                "青白江区": "510113",
+                "新都区": "510114",
+                "温江区": "510115",
+                "双流区": "510116",
+                "郫都区": "510117",
+                "新津区": "510118",
+                "金堂县": "510121",
+                "大邑县": "510129",
+                "蒲江县": "510131",
+                "都江堰市": "510181",
+                "彭州市": "510182",
+                "邛崃市": "510183",
+                "崇州市": "510184",
+                "简阳市": "510185"
+                },
+                "自贡市": {
+                "自流井区": "510302",
+                "贡井区": "510303",
+                "大安区": "510304",
+                "沿滩区": "510311",
+                "荣县": "510321",
+                "富顺县": "510322"
+                },
+                "攀枝花市": {
+                "东区": "510402",
+                "西区": "510403",
+                "仁和区": "510411",
+                "米易县": "510421",
+                "盐边县": "510422"
+                },
+                "泸州市": {
+                "江阳区": "510502",
+                "纳溪区": "510503",
+                "龙马潭区": "510504",
+                "泸县": "510521",
+                "合江县": "510522",
+                "叙永县": "510524",
+                "古蔺县": "510525"
+                },
+                "德阳市": {
+                "旌阳区": "510603",
+                "罗江区": "510604",
+                "中江县": "510623",
+                "广汉市": "510681",
+                "什邡市": "510682",
+                "绵竹市": "510683"
+                },
+                "绵阳市": {
+                "涪城区": "510703",
+                "游仙区": "510704",
+                "安州区": "510705",
+                "三台县": "510722",
+                "盐亭县": "510723",
+                "梓潼县": "510725",
+                "北川羌族自治县": "510726",
+                "平武县": "510727",
+                "江油市": "510781"
+                },
+                "广元市": {
+                "利州区": "510802",
+                "昭化区": "510811",
+                "朝天区": "510812",
+                "旺苍县": "510821",
+                "青川县": "510822",
+                "剑阁县": "510823",
+                "苍溪县": "510824"
+                },
+                "遂宁市": {
+                "船山区": "510903",
+                "安居区": "510904",
+                "蓬溪县": "510921",
+                "大英县": "510923",
+                "射洪市": "510981"
+                },
+                "内江市": {
+                "市中区": "511002",
+                "东兴区": "511011",
+                "威远县": "511024",
+                "资中县": "511025",
+                "隆昌市": "511083"
+                },
+                "乐山市": {
+                "市中区": "511102",
+                "沙湾区": "511111",
+                "五通桥区": "511112",
+                "金口河区": "511113",
+                "犍为县": "511123",
+                "井研县": "511124",
+                "夹江县": "511126",
+                "沐川县": "511129",
+                "峨边彝族自治县": "511132",
+                "马边彝族自治县": "511133",
+                "峨眉山市": "511181"
+                },
+                "南充市": {
+                "顺庆区": "511302",
+                "高坪区": "511303",
+                "嘉陵区": "511304",
+                "南部县": "511321",
+                "营山县": "511322",
+                "蓬安县": "511323",
+                "仪陇县": "511324",
+                "西充县": "511325",
+                "阆中市": "511381"
+                },
+                "眉山市": {
+                "东坡区": "511402",
+                "彭山区": "511403",
+                "仁寿县": "511421",
+                "洪雅县": "511423",
+                "丹棱县": "511424",
+                "青神县": "511425"
+                },
+                "宜宾市": {
+                "翠屏区": "511502",
+                "南溪区": "511503",
+                "叙州区": "511504",
+                "江安县": "511523",
+                "长宁县": "511524",
+                "高县": "511525",
+                "珙县": "511526",
+                "筠连县": "511527",
+                "兴文县": "511528",
+                "屏山县": "511529"
+                },
+                "广安市": {
+                "广安区": "511602",
+                "前锋区": "511603",
+                "岳池县": "511621",
+                "武胜县": "511622",
+                "邻水县": "511623",
+                "华蓥市": "511681"
+                },
+                "达州市": {
+                "通川区": "511702",
+                "达川区": "511703",
+                "宣汉县": "511722",
+                "开江县": "511723",
+                "大竹县": "511724",
+                "渠县": "511725",
+                "万源市": "511781"
+                },
+                "雅安市": {
+                "雨城区": "511802",
+                "名山区": "511803",
+                "荥经县": "511822",
+                "汉源县": "511823",
+                "石棉县": "511824",
+                "天全县": "511825",
+                "芦山县": "511826",
+                "宝兴县": "511827"
+                },
+                "巴中市": {
+                "巴州区": "511902",
+                "恩阳区": "511903",
+                "通江县": "511921",
+                "南江县": "511922",
+                "平昌县": "511923"
+                },
+                "资阳市": {
+                "雁江区": "512002",
+                "安岳县": "512021",
+                "乐至县": "512022"
+                },
+                "阿坝藏族羌族自治州": {
+                "马尔康市": "513201",
+                "汶川县": "513221",
+                "理县": "513222",
+                "茂县": "513223",
+                "松潘县": "513224",
+                "九寨沟县": "513225",
+                "金川县": "513226",
+                "小金县": "513227",
+                "黑水县": "513228",
+                "壤塘县": "513230",
+                "阿坝县": "513231",
+                "若尔盖县": "513232",
+                "红原县": "513233"
+                },
+                "甘孜藏族自治州": {
+                "康定市": "513301",
+                "泸定县": "513322",
+                "丹巴县": "513323",
+                "九龙县": "513324",
+                "雅江县": "513325",
+                "道孚县": "513326",
+                "炉霍县": "513327",
+                "甘孜县": "513328",
+                "新龙县": "513329",
+                "德格县": "513330",
+                "白玉县": "513331",
+                "石渠县": "513332",
+                "色达县": "513333",
+                "理塘县": "513334",
+                "巴塘县": "513335",
+                "乡城县": "513336",
+                "稻城县": "513337",
+                "得荣县": "513338"
+                },
+                "凉山彝族自治州": {
+                "西昌市": "513401",
+                "会理市": "513402",
+                "木里藏族自治县": "513422",
+                "盐源县": "513423",
+                "德昌县": "513424",
+                "会东县": "513426",
+                "宁南县": "513427",
+                "普格县": "513428",
+                "布拖县": "513429",
+                "金阳县": "513430",
+                "昭觉县": "513431",
+                "喜德县": "513432",
+                "冕宁县": "513433",
+                "越西县": "513434",
+                "甘洛县": "513435",
+                "美姑县": "513436",
+                "雷波县": "513437"
+                }
+            },
+            "贵州省": {
+                "贵阳市": {
+                "南明区": "520102",
+                "云岩区": "520103",
+                "花溪区": "520111",
+                "乌当区": "520112",
+                "白云区": "520113",
+                "观山湖区": "520115",
+                "开阳县": "520121",
+                "息烽县": "520122",
+                "修文县": "520123",
+                "清镇市": "520181"
+                },
+                "六盘水市": {
+                "钟山区": "520201",
+                "六枝特区": "520203",
+                "水城区": "520204",
+                "盘州市": "520281"
+                },
+                "遵义市": {
+                "红花岗区": "520302",
+                "汇川区": "520303",
+                "播州区": "520304",
+                "桐梓县": "520322",
+                "绥阳县": "520323",
+                "正安县": "520324",
+                "道真仡佬族苗族自治县": "520325",
+                "务川仡佬族苗族自治县": "520326",
+                "凤冈县": "520327",
+                "湄潭县": "520328",
+                "余庆县": "520329",
+                "习水县": "520330",
+                "赤水市": "520381",
+                "仁怀市": "520382"
+                },
+                "安顺市": {
+                "西秀区": "520402",
+                "平坝区": "520403",
+                "普定县": "520422",
+                "镇宁布依族苗族自治县": "520423",
+                "关岭布依族苗族自治县": "520424",
+                "紫云苗族布依族自治县": "520425"
+                },
+                "毕节市": {
+                "七星关区": "520502",
+                "大方县": "520521",
+                "金沙县": "520523",
+                "织金县": "520524",
+                "纳雍县": "520525",
+                "威宁彝族回族苗族自治县": "520526",
+                "赫章县": "520527",
+                "黔西市": "520581"
+                },
+                "铜仁市": {
+                "碧江区": "520602",
+                "万山区": "520603",
+                "江口县": "520621",
+                "玉屏侗族自治县": "520622",
+                "石阡县": "520623",
+                "思南县": "520624",
+                "印江土家族苗族自治县": "520625",
+                "德江县": "520626",
+                "沿河土家族自治县": "520627",
+                "松桃苗族自治县": "520628"
+                },
+                "黔西南布依族苗族自治州": {
+                "兴义市": "522301",
+                "兴仁市": "522302",
+                "普安县": "522323",
+                "晴隆县": "522324",
+                "贞丰县": "522325",
+                "望谟县": "522326",
+                "册亨县": "522327",
+                "安龙县": "522328"
+                },
+                "黔东南苗族侗族自治州": {
+                "凯里市": "522601",
+                "黄平县": "522622",
+                "施秉县": "522623",
+                "三穗县": "522624",
+                "镇远县": "522625",
+                "岑巩县": "522626",
+                "天柱县": "522627",
+                "锦屏县": "522628",
+                "剑河县": "522629",
+                "台江县": "522630",
+                "黎平县": "522631",
+                "榕江县": "522632",
+                "从江县": "522633",
+                "雷山县": "522634",
+                "麻江县": "522635",
+                "丹寨县": "522636"
+                },
+                "黔南布依族苗族自治州": {
+                "都匀市": "522701",
+                "福泉市": "522702",
+                "荔波县": "522722",
+                "贵定县": "522723",
+                "瓮安县": "522725",
+                "独山县": "522726",
+                "平塘县": "522727",
+                "罗甸县": "522728",
+                "长顺县": "522729",
+                "龙里县": "522730",
+                "惠水县": "522731",
+                "三都水族自治县": "522732"
+                }
+            },
+            "云南省": {
+                "昆明市": {
+                "五华区": "530102",
+                "盘龙区": "530103",
+                "官渡区": "530111",
+                "西山区": "530112",
+                "东川区": "530113",
+                "呈贡区": "530114",
+                "晋宁区": "530115",
+                "富民县": "530124",
+                "宜良县": "530125",
+                "石林彝族自治县": "530126",
+                "嵩明县": "530127",
+                "禄劝彝族苗族自治县": "530128",
+                "寻甸回族彝族自治县": "530129",
+                "安宁市": "530181"
+                },
+                "曲靖市": {
+                "麒麟区": "530302",
+                "沾益区": "530303",
+                "马龙区": "530304",
+                "陆良县": "530322",
+                "师宗县": "530323",
+                "罗平县": "530324",
+                "富源县": "530325",
+                "会泽县": "530326",
+                "宣威市": "530381"
+                },
+                "玉溪市": {
+                "红塔区": "530402",
+                "江川区": "530403",
+                "通海县": "530423",
+                "华宁县": "530424",
+                "易门县": "530425",
+                "峨山彝族自治县": "530426",
+                "新平彝族傣族自治县": "530427",
+                "元江哈尼族彝族傣族自治县": "530428",
+                "澄江市": "530481"
+                },
+                "保山市": {
+                "隆阳区": "530502",
+                "施甸县": "530521",
+                "龙陵县": "530523",
+                "昌宁县": "530524",
+                "腾冲市": "530581"
+                },
+                "昭通市": {
+                "昭阳区": "530602",
+                "鲁甸县": "530621",
+                "巧家县": "530622",
+                "盐津县": "530623",
+                "大关县": "530624",
+                "永善县": "530625",
+                "绥江县": "530626",
+                "镇雄县": "530627",
+                "彝良县": "530628",
+                "威信县": "530629",
+                "水富市": "530681"
+                },
+                "丽江市": {
+                "古城区": "530702",
+                "玉龙纳西族自治县": "530721",
+                "永胜县": "530722",
+                "华坪县": "530723",
+                "宁蒗彝族自治县": "530724"
+                },
+                "普洱市": {
+                "思茅区": "530802",
+                "宁洱哈尼族彝族自治县": "530821",
+                "墨江哈尼族自治县": "530822",
+                "景东彝族自治县": "530823",
+                "景谷傣族彝族自治县": "530824",
+                "镇沅彝族哈尼族拉祜族自治县": "530825",
+                "江城哈尼族彝族自治县": "530826",
+                "孟连傣族拉祜族佤族自治县": "530827",
+                "澜沧拉祜族自治县": "530828",
+                "西盟佤族自治县": "530829"
+                },
+                "临沧市": {
+                "临翔区": "530902",
+                "凤庆县": "530921",
+                "云县": "530922",
+                "永德县": "530923",
+                "镇康县": "530924",
+                "双江拉祜族佤族布朗族傣族自治县": "530925",
+                "耿马傣族佤族自治县": "530926",
+                "沧源佤族自治县": "530927"
+                },
+                "楚雄彝族自治州": {
+                "楚雄市": "532301",
+                "禄丰市": "532302",
+                "双柏县": "532322",
+                "牟定县": "532323",
+                "南华县": "532324",
+                "姚安县": "532325",
+                "大姚县": "532326",
+                "永仁县": "532327",
+                "元谋县": "532328",
+                "武定县": "532329"
+                },
+                "红河哈尼族彝族自治州": {
+                "个旧市": "532501",
+                "开远市": "532502",
+                "蒙自市": "532503",
+                "弥勒市": "532504",
+                "屏边苗族自治县": "532523",
+                "建水县": "532524",
+                "石屏县": "532525",
+                "泸西县": "532527",
+                "元阳县": "532528",
+                "红河县": "532529",
+                "金平苗族瑶族傣族自治县": "532530",
+                "绿春县": "532531",
+                "河口瑶族自治县": "532532"
+                },
+                "文山壮族苗族自治州": {
+                "文山市": "532601",
+                "砚山县": "532622",
+                "西畴县": "532623",
+                "麻栗坡县": "532624",
+                "马关县": "532625",
+                "丘北县": "532626",
+                "广南县": "532627",
+                "富宁县": "532628"
+                },
+                "西双版纳傣族自治州": {
+                "景洪市": "532801",
+                "勐海县": "532822",
+                "勐腊县": "532823"
+                },
+                "大理白族自治州": {
+                "大理市": "532901",
+                "漾濞彝族自治县": "532922",
+                "祥云县": "532923",
+                "宾川县": "532924",
+                "弥渡县": "532925",
+                "南涧彝族自治县": "532926",
+                "巍山彝族回族自治县": "532927",
+                "永平县": "532928",
+                "云龙县": "532929",
+                "洱源县": "532930",
+                "剑川县": "532931",
+                "鹤庆县": "532932"
+                },
+                "德宏傣族景颇族自治州": {
+                "瑞丽市": "533102",
+                "芒市": "533103",
+                "梁河县": "533122",
+                "盈江县": "533123",
+                "陇川县": "533124"
+                },
+                "怒江傈僳族自治州": {
+                "泸水市": "533301",
+                "福贡县": "533323",
+                "贡山独龙族怒族自治县": "533324",
+                "兰坪白族普米族自治县": "533325"
+                },
+                "迪庆藏族自治州": {
+                "香格里拉市": "533401",
+                "德钦县": "533422",
+                "维西傈僳族自治县": "533423"
+                }
+            },
+            "西藏自治区": {
+                "拉萨市": {
+                "城关区": "540102",
+                "堆龙德庆区": "540103",
+                "达孜区": "540104",
+                "林周县": "540121",
+                "当雄县": "540122",
+                "尼木县": "540123",
+                "曲水县": "540124",
+                "墨竹工卡县": "540127",
+                "格尔木藏青工业园区": "540171",
+                "拉萨经济技术开发区": "540172",
+                "西藏文化旅游创意园区": "540173",
+                "达孜工业园区": "540174"
+                },
+                "日喀则市": {
+                "桑珠孜区": "540202",
+                "南木林县": "540221",
+                "江孜县": "540222",
+                "定日县": "540223",
+                "萨迦县": "540224",
+                "拉孜县": "540225",
+                "昂仁县": "540226",
+                "谢通门县": "540227",
+                "白朗县": "540228",
+                "仁布县": "540229",
+                "康马县": "540230",
+                "定结县": "540231",
+                "仲巴县": "540232",
+                "亚东县": "540233",
+                "吉隆县": "540234",
+                "聂拉木县": "540235",
+                "萨嘎县": "540236",
+                "岗巴县": "540237"
+                },
+                "昌都市": {
+                "卡若区": "540302",
+                "江达县": "540321",
+                "贡觉县": "540322",
+                "类乌齐县": "540323",
+                "丁青县": "540324",
+                "察雅县": "540325",
+                "八宿县": "540326",
+                "左贡县": "540327",
+                "芒康县": "540328",
+                "洛隆县": "540329",
+                "边坝县": "540330"
+                },
+                "林芝市": {
+                "巴宜区": "540402",
+                "工布江达县": "540421",
+                "墨脱县": "540423",
+                "波密县": "540424",
+                "察隅县": "540425",
+                "朗县": "540426",
+                "米林市": "540481"
+                },
+                "山南市": {
+                "乃东区": "540502",
+                "扎囊县": "540521",
+                "贡嘎县": "540522",
+                "桑日县": "540523",
+                "琼结县": "540524",
+                "曲松县": "540525",
+                "措美县": "540526",
+                "洛扎县": "540527",
+                "加查县": "540528",
+                "隆子县": "540529",
+                "浪卡子县": "540531",
+                "错那市": "540581"
+                },
+                "那曲市": {
+                "色尼区": "540602",
+                "嘉黎县": "540621",
+                "比如县": "540622",
+                "聂荣县": "540623",
+                "安多县": "540624",
+                "申扎县": "540625",
+                "索县": "540626",
+                "班戈县": "540627",
+                "巴青县": "540628",
+                "尼玛县": "540629",
+                "双湖县": "540630"
+                },
+                "阿里地区": {
+                "普兰县": "542521",
+                "札达县": "542522",
+                "噶尔县": "542523",
+                "日土县": "542524",
+                "革吉县": "542525",
+                "改则县": "542526",
+                "措勤县": "542527"
+                }
+            },
+            "陕西省": {
+                "西安市": {
+                "新城区": "610102",
+                "碑林区": "610103",
+                "莲湖区": "610104",
+                "灞桥区": "610111",
+                "未央区": "610112",
+                "雁塔区": "610113",
+                "阎良区": "610114",
+                "临潼区": "610115",
+                "长安区": "610116",
+                "高陵区": "610117",
+                "鄠邑区": "610118",
+                "蓝田县": "610122",
+                "周至县": "610124"
+                },
+                "铜川市": {
+                "王益区": "610202",
+                "印台区": "610203",
+                "耀州区": "610204",
+                "宜君县": "610222"
+                },
+                "宝鸡市": {
+                "渭滨区": "610302",
+                "金台区": "610303",
+                "陈仓区": "610304",
+                "凤翔区": "610305",
+                "岐山县": "610323",
+                "扶风县": "610324",
+                "眉县": "610326",
+                "陇县": "610327",
+                "千阳县": "610328",
+                "麟游县": "610329",
+                "凤县": "610330",
+                "太白县": "610331"
+                },
+                "咸阳市": {
+                "秦都区": "610402",
+                "杨陵区": "610403",
+                "渭城区": "610404",
+                "三原县": "610422",
+                "泾阳县": "610423",
+                "乾县": "610424",
+                "礼泉县": "610425",
+                "永寿县": "610426",
+                "长武县": "610428",
+                "旬邑县": "610429",
+                "淳化县": "610430",
+                "武功县": "610431",
+                "兴平市": "610481",
+                "彬州市": "610482"
+                },
+                "渭南市": {
+                "临渭区": "610502",
+                "华州区": "610503",
+                "潼关县": "610522",
+                "大荔县": "610523",
+                "合阳县": "610524",
+                "澄城县": "610525",
+                "蒲城县": "610526",
+                "白水县": "610527",
+                "富平县": "610528",
+                "韩城市": "610581",
+                "华阴市": "610582"
+                },
+                "延安市": {
+                "宝塔区": "610602",
+                "安塞区": "610603",
+                "延长县": "610621",
+                "延川县": "610622",
+                "志丹县": "610625",
+                "吴起县": "610626",
+                "甘泉县": "610627",
+                "富县": "610628",
+                "洛川县": "610629",
+                "宜川县": "610630",
+                "黄龙县": "610631",
+                "黄陵县": "610632",
+                "子长市": "610681"
+                },
+                "汉中市": {
+                "汉台区": "610702",
+                "南郑区": "610703",
+                "城固县": "610722",
+                "洋县": "610723",
+                "西乡县": "610724",
+                "勉县": "610725",
+                "宁强县": "610726",
+                "略阳县": "610727",
+                "镇巴县": "610728",
+                "留坝县": "610729",
+                "佛坪县": "610730"
+                },
+                "榆林市": {
+                "榆阳区": "610802",
+                "横山区": "610803",
+                "府谷县": "610822",
+                "靖边县": "610824",
+                "定边县": "610825",
+                "绥德县": "610826",
+                "米脂县": "610827",
+                "佳县": "610828",
+                "吴堡县": "610829",
+                "清涧县": "610830",
+                "子洲县": "610831",
+                "神木市": "610881"
+                },
+                "安康市": {
+                "汉滨区": "610902",
+                "汉阴县": "610921",
+                "石泉县": "610922",
+                "宁陕县": "610923",
+                "紫阳县": "610924",
+                "岚皋县": "610925",
+                "平利县": "610926",
+                "镇坪县": "610927",
+                "白河县": "610929",
+                "旬阳市": "610981"
+                },
+                "商洛市": {
+                "商州区": "611002",
+                "洛南县": "611021",
+                "丹凤县": "611022",
+                "商南县": "611023",
+                "山阳县": "611024",
+                "镇安县": "611025",
+                "柞水县": "611026"
+                }
+            },
+            "甘肃省": {
+                "兰州市": {
+                "城关区": "620102",
+                "七里河区": "620103",
+                "西固区": "620104",
+                "安宁区": "620105",
+                "红古区": "620111",
+                "永登县": "620121",
+                "皋兰县": "620122",
+                "榆中县": "620123",
+                "兰州新区": "620171"
+                },
+                "嘉峪关市": {
+                "嘉峪关市": "620201"
+                },
+                "金昌市": {
+                "金川区": "620302",
+                "永昌县": "620321"
+                },
+                "白银市": {
+                "白银区": "620402",
+                "平川区": "620403",
+                "靖远县": "620421",
+                "会宁县": "620422",
+                "景泰县": "620423"
+                },
+                "天水市": {
+                "秦州区": "620502",
+                "麦积区": "620503",
+                "清水县": "620521",
+                "秦安县": "620522",
+                "甘谷县": "620523",
+                "武山县": "620524",
+                "张家川回族自治县": "620525"
+                },
+                "武威市": {
+                "凉州区": "620602",
+                "民勤县": "620621",
+                "古浪县": "620622",
+                "天祝藏族自治县": "620623"
+                },
+                "张掖市": {
+                "甘州区": "620702",
+                "肃南裕固族自治县": "620721",
+                "民乐县": "620722",
+                "临泽县": "620723",
+                "高台县": "620724",
+                "山丹县": "620725"
+                },
+                "平凉市": {
+                "崆峒区": "620802",
+                "泾川县": "620821",
+                "灵台县": "620822",
+                "崇信县": "620823",
+                "庄浪县": "620825",
+                "静宁县": "620826",
+                "华亭市": "620881"
+                },
+                "酒泉市": {
+                "肃州区": "620902",
+                "金塔县": "620921",
+                "瓜州县": "620922",
+                "肃北蒙古族自治县": "620923",
+                "阿克塞哈萨克族自治县": "620924",
+                "玉门市": "620981",
+                "敦煌市": "620982"
+                },
+                "庆阳市": {
+                "西峰区": "621002",
+                "庆城县": "621021",
+                "环县": "621022",
+                "华池县": "621023",
+                "合水县": "621024",
+                "正宁县": "621025",
+                "宁县": "621026",
+                "镇原县": "621027"
+                },
+                "定西市": {
+                "安定区": "621102",
+                "通渭县": "621121",
+                "陇西县": "621122",
+                "渭源县": "621123",
+                "临洮县": "621124",
+                "漳县": "621125",
+                "岷县": "621126"
+                },
+                "陇南市": {
+                "武都区": "621202",
+                "成县": "621221",
+                "文县": "621222",
+                "宕昌县": "621223",
+                "康县": "621224",
+                "西和县": "621225",
+                "礼县": "621226",
+                "徽县": "621227",
+                "两当县": "621228"
+                },
+                "临夏回族自治州": {
+                "临夏市": "622901",
+                "临夏县": "622921",
+                "康乐县": "622922",
+                "永靖县": "622923",
+                "广河县": "622924",
+                "和政县": "622925",
+                "东乡族自治县": "622926",
+                "积石山保安族东乡族撒拉族自治县": "622927"
+                },
+                "甘南藏族自治州": {
+                "合作市": "623001",
+                "临潭县": "623021",
+                "卓尼县": "623022",
+                "舟曲县": "623023",
+                "迭部县": "623024",
+                "玛曲县": "623025",
+                "碌曲县": "623026",
+                "夏河县": "623027"
+                }
+            },
+            "青海省": {
+                "西宁市": {
+                "城东区": "630102",
+                "城中区": "630103",
+                "城西区": "630104",
+                "城北区": "630105",
+                "湟中区": "630106",
+                "大通回族土族自治县": "630121",
+                "湟源县": "630123"
+                },
+                "海东市": {
+                "乐都区": "630202",
+                "平安区": "630203",
+                "民和回族土族自治县": "630222",
+                "互助土族自治县": "630223",
+                "化隆回族自治县": "630224",
+                "循化撒拉族自治县": "630225"
+                },
+                "海北藏族自治州": {
+                "门源回族自治县": "632221",
+                "祁连县": "632222",
+                "海晏县": "632223",
+                "刚察县": "632224"
+                },
+                "黄南藏族自治州": {
+                "同仁市": "632301",
+                "尖扎县": "632322",
+                "泽库县": "632323",
+                "河南蒙古族自治县": "632324"
+                },
+                "海南藏族自治州": {
+                "共和县": "632521",
+                "同德县": "632522",
+                "贵德县": "632523",
+                "兴海县": "632524",
+                "贵南县": "632525"
+                },
+                "果洛藏族自治州": {
+                "玛沁县": "632621",
+                "班玛县": "632622",
+                "甘德县": "632623",
+                "达日县": "632624",
+                "久治县": "632625",
+                "玛多县": "632626"
+                },
+                "玉树藏族自治州": {
+                "玉树市": "632701",
+                "杂多县": "632722",
+                "称多县": "632723",
+                "治多县": "632724",
+                "囊谦县": "632725",
+                "曲麻莱县": "632726"
+                },
+                "海西蒙古族藏族自治州": {
+                "格尔木市": "632801",
+                "德令哈市": "632802",
+                "茫崖市": "632803",
+                "乌兰县": "632821",
+                "都兰县": "632822",
+                "天峻县": "632823",
+                "大柴旦行政委员会": "632857"
+                }
+            },
+            "宁夏回族自治区": {
+                "银川市": {
+                "兴庆区": "640104",
+                "西夏区": "640105",
+                "金凤区": "640106",
+                "永宁县": "640121",
+                "贺兰县": "640122",
+                "灵武市": "640181"
+                },
+                "石嘴山市": {
+                "大武口区": "640202",
+                "惠农区": "640205",
+                "平罗县": "640221"
+                },
+                "吴忠市": {
+                "利通区": "640302",
+                "红寺堡区": "640303",
+                "盐池县": "640323",
+                "同心县": "640324",
+                "青铜峡市": "640381"
+                },
+                "固原市": {
+                "原州区": "640402",
+                "西吉县": "640422",
+                "隆德县": "640423",
+                "泾源县": "640424",
+                "彭阳县": "640425"
+                },
+                "中卫市": {
+                "沙坡头区": "640502",
+                "中宁县": "640521",
+                "海原县": "640522"
+                }
+            },
+            "新疆维吾尔自治区": {
+                "乌鲁木齐市": {
+                "天山区": "650102",
+                "沙依巴克区": "650103",
+                "新市区": "650104",
+                "水磨沟区": "650105",
+                "头屯河区": "650106",
+                "达坂城区": "650107",
+                "米东区": "650109",
+                "乌鲁木齐县": "650121"
+                },
+                "克拉玛依市": {
+                "独山子区": "650202",
+                "克拉玛依区": "650203",
+                "白碱滩区": "650204",
+                "乌尔禾区": "650205"
+                },
+                "吐鲁番市": {
+                "高昌区": "650402",
+                "鄯善县": "650421",
+                "托克逊县": "650422"
+                },
+                "哈密市": {
+                "伊州区": "650502",
+                "巴里坤哈萨克自治县": "650521",
+                "伊吾县": "650522"
+                },
+                "昌吉回族自治州": {
+                "昌吉市": "652301",
+                "阜康市": "652302",
+                "呼图壁县": "652323",
+                "玛纳斯县": "652324",
+                "奇台县": "652325",
+                "吉木萨尔县": "652327",
+                "木垒哈萨克自治县": "652328"
+                },
+                "博尔塔拉蒙古自治州": {
+                "博乐市": "652701",
+                "阿拉山口市": "652702",
+                "精河县": "652722",
+                "温泉县": "652723"
+                },
+                "巴音郭楞蒙古自治州": {
+                "库尔勒市": "652801",
+                "轮台县": "652822",
+                "尉犁县": "652823",
+                "若羌县": "652824",
+                "且末县": "652825",
+                "焉耆回族自治县": "652826",
+                "和静县": "652827",
+                "和硕县": "652828",
+                "博湖县": "652829"
+                },
+                "阿克苏地区": {
+                "阿克苏市": "652901",
+                "库车市": "652902",
+                "温宿县": "652922",
+                "沙雅县": "652924",
+                "新和县": "652925",
+                "拜城县": "652926",
+                "乌什县": "652927",
+                "阿瓦提县": "652928",
+                "柯坪县": "652929"
+                },
+                "克孜勒苏柯尔克孜自治州": {
+                "阿图什市": "653001",
+                "阿克陶县": "653022",
+                "阿合奇县": "653023",
+                "乌恰县": "653024"
+                },
+                "喀什地区": {
+                "喀什市": "653101",
+                "疏附县": "653121",
+                "疏勒县": "653122",
+                "英吉沙县": "653123",
+                "泽普县": "653124",
+                "莎车县": "653125",
+                "叶城县": "653126",
+                "麦盖提县": "653127",
+                "岳普湖县": "653128",
+                "伽师县": "653129",
+                "巴楚县": "653130",
+                "塔什库尔干塔吉克自治县": "653131"
+                },
+                "和田地区": {
+                "和田市": "653201",
+                "和田县": "653221",
+                "墨玉县": "653222",
+                "皮山县": "653223",
+                "洛浦县": "653224",
+                "策勒县": "653225",
+                "于田县": "653226",
+                "民丰县": "653227"
+                },
+                "伊犁哈萨克自治州": {
+                "伊宁市": "654002",
+                "奎屯市": "654003",
+                "霍尔果斯市": "654004",
+                "伊宁县": "654021",
+                "察布查尔锡伯自治县": "654022",
+                "霍城县": "654023",
+                "巩留县": "654024",
+                "新源县": "654025",
+                "昭苏县": "654026",
+                "特克斯县": "654027",
+                "尼勒克县": "654028"
+                },
+                "塔城地区": {
+                "塔城市": "654201",
+                "乌苏市": "654202",
+                "沙湾市": "654203",
+                "额敏县": "654221",
+                "托里县": "654224",
+                "裕民县": "654225",
+                "和布克赛尔蒙古自治县": "654226"
+                },
+                "阿勒泰地区": {
+                "阿勒泰市": "654301",
+                "布尔津县": "654321",
+                "富蕴县": "654322",
+                "福海县": "654323",
+                "哈巴河县": "654324",
+                "青河县": "654325",
+                "吉木乃县": "654326"
+                },
+                "自治区直辖县级行政区划": {
+                "石河子市": "659001",
+                "阿拉尔市": "659002",
+                "图木舒克市": "659003",
+                "五家渠市": "659004",
+                "北屯市": "659005",
+                "铁门关市": "659006",
+                "双河市": "659007",
+                "可克达拉市": "659008",
+                "昆玉市": "659009",
+                "胡杨河市": "659010",
+                "新星市": "659011",
+                "白杨市": "659012"
+                }
+            }
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initGenerateTab();
+            
+            // 选项卡切换
+            tabNav.addEventListener('click', function(e) {
+                if (e.target.tagName === 'BUTTON') {
+                    const tabId = e.target.getAttribute('data-tab');
+                    
+                    // 更新选项卡导航状态
+                    document.querySelectorAll('#tabNav button').forEach(btn => {
+                        btn.classList.remove('tab-active');
+                        btn.classList.add('text-gray-500', 'hover:text-gray-700');
+                        btn.setAttribute('aria-selected', 'false');
+                    });
+                    
+                    e.target.classList.add('tab-active');
+                    e.target.classList.remove('text-gray-500', 'hover:text-gray-700');
+                    e.target.setAttribute('aria-selected', 'true');
+                    
+                    // 更新选项卡内容
+                    tabPanes.forEach(pane => {
+                        if (pane.id === tabId) {
+                            pane.classList.remove('hidden');
+                            pane.classList.add('active');
+                        } else {
+                            pane.classList.add('hidden');
+                            pane.classList.remove('active');
+                        }
+                    });
+                    
+                    updateStatus('就绪');
+                }
+            });
+            
+            // 搜索按钮点击事件
+            searchBtn.addEventListener('click', performSearch);
+            
+            // 清空搜索按钮点击事件
+            clearSearchBtn.addEventListener('click', clearSearch);
+            
+            // 复制搜索结果按钮点击事件
+            copySearchBtn.addEventListener('click', copySearchResults);
+            
+            // 计算按钮点击事件
+            calculateBtn.addEventListener('click', calculateCheckDigit);
+            
+            // 清空计算按钮点击事件
+            clearCalculateBtn.addEventListener('click', clearCalculate);
+            
+            // 查验按钮点击事件
+            verifyBtn.addEventListener('click', verifyIdNumber);
+            
+            // 清空查验按钮点击事件
+            clearVerifyBtn.addEventListener('click', clearVerify);
+            
+            // 生成身份证按钮点击事件
+            generateIdBtn.addEventListener('click', generateIdNumber);
+            
+            // 清空生成表单按钮点击事件
+            clearGenerateBtn.addEventListener('click', clearGenerateForm);
+            
+            // 复制生成结果按钮点击事件
+            copyGeneratedBtn.addEventListener('click', copyGeneratedId);
+            
+            // 关闭通知按钮点击事件
+            document.getElementById('closeNotification').addEventListener('click', hideNotification);
+            
+            // 输入框验证
+            first14Input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+            
+            checkDigitInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase().replace(/[^0-9X]/g, '');
+            });
+            
+            id17Input.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+            });
+            
+            idNumberInput.addEventListener('input', function() {
+                this.value = this.value.toUpperCase().replace(/[^0-9X]/g, '');
+            });
+            
+            // 回车键触发搜索/计算/查验
+            first14Input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+            
+            checkDigitInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') performSearch();
+            });
+            
+            id17Input.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') calculateCheckDigit();
+            });
+            
+            idNumberInput.addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') verifyIdNumber();
+            });
+            
+            // 省份选择变化事件
+            provinceSelect.addEventListener('change', function() {
+                loadCities();
+            });
+            
+            // 城市选择变化事件
+            citySelect.addEventListener('change', function() {
+                loadDistricts();
+            });
+            
+            // 年份选择变化事件
+            yearSelect.addEventListener('change', function() {
+                loadDays();
+            });
+            
+            // 月份选择变化事件
+            monthSelect.addEventListener('change', function() {
+                loadDays();
+            });
+        });
+        
+        /**
+         * 初始化生成身份证选项卡
+         */
+        function initGenerateTab() {
+            // 加载省份
+            loadProvinces();
+            
+            // 加载年份 (1950-2020)
+            loadYears();
+            
+            // 加载月份
+            loadMonths();
+        }
+        
+        /**
+         * 加载省份列表
+         */
+        function loadProvinces() {
+            const provinces = Object.keys(addressCodes);
+            provinces.forEach(province => {
+                const option = document.createElement('option');
+                option.value = province;
+                option.textContent = province;
+                provinceSelect.appendChild(option);
+            });
+        }
+        
+        /**
+         * 加载城市列表
+         */
+        function loadCities() {
+            // 清空城市和区县
+            citySelect.innerHTML = '<option value="">请选择城市</option>';
+            districtSelect.innerHTML = '<option value="">请选择区县</option>';
+            
+            const selectedProvince = provinceSelect.value;
+            if (!selectedProvince) return;
+            
+            const cities = Object.keys(addressCodes[selectedProvince]);
+            cities.forEach(city => {
+                const option = document.createElement('option');
+                option.value = city;
+                option.textContent = city;
+                citySelect.appendChild(option);
+            });
+        }
+        
+        /**
+         * 加载区县列表
+         */
+        function loadDistricts() {
+            // 清空区县
+            districtSelect.innerHTML = '<option value="">请选择区县</option>';
+            
+            const selectedProvince = provinceSelect.value;
+            const selectedCity = citySelect.value;
+            
+            if (!selectedProvince || !selectedCity) return;
+            
+            const districts = Object.keys(addressCodes[selectedProvince][selectedCity]);
+            districts.forEach(district => {
+                const option = document.createElement('option');
+                option.value = district;
+                option.textContent = district;
+                districtSelect.appendChild(option);
+            });
+        }
+        
+        /**
+         * 加载年份列表
+         */
+        function loadYears() {
+            yearSelect.innerHTML = '<option value="">请选择年份</option>';
+            
+            // 生成1950-2020年的选项
+            for (let year = 1950; year <= 2020; year++) {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            }
+        }
+        
+        /**
+         * 加载月份列表
+         */
+        function loadMonths() {
+            monthSelect.innerHTML = '<option value="">请选择月份</option>';
+            
+            // 生成1-12月的选项
+            for (let month = 1; month <= 12; month++) {
+                const option = document.createElement('option');
+                option.value = month;
+                option.textContent = month;
+                monthSelect.appendChild(option);
+            }
+        }
+        
+        /**
+         * 加载日期列表
+         */
+        function loadDays() {
+            daySelect.innerHTML = '<option value="">请选择日期</option>';
+            
+            const selectedYear = yearSelect.value;
+            const selectedMonth = monthSelect.value;
+            
+            if (!selectedYear || !selectedMonth) return;
+            
+            // 计算当月的天数
+            const daysInMonth = new Date(selectedYear, selectedMonth, 0).getDate();
+            
+            // 生成日期选项
+            for (let day = 1; day <= daysInMonth; day++) {
+                const option = document.createElement('option');
+                option.value = day;
+                option.textContent = day;
+                daySelect.appendChild(option);
+            }
+        }
+        
+        /**
+         * 计算校验码
+         * @param {string} id17 - 身份证前17位
+         * @returns {string|null} - 校验码或null（如果输入无效）
+         */
+        function calculateCheckDigitValue(id17) {
+            if (id17.length !== 17 || !/^\d+$/.test(id17)) {
+                return null;
+            }
+            
+            // 计算加权和
+            let sum = 0;
+            for (let i = 0; i < 17; i++) {
+                sum += parseInt(id17[i]) * WEIGHTS[i];
+            }
+            
+            // 计算校验码 - 修复公式
+            let checkDigit = (1 - (sum % 11)) % 11;
+            // 确保结果为正数
+            if (checkDigit < 0) checkDigit += 11;
+            return checkDigit === 10 ? 'X' : checkDigit.toString();
+        }
+        
+        /**
+         * 从地址码获取地区信息
+         * @param {string} code - 6位地址码
+         * @returns {string} - 地区名称（如：北京市-市辖区-东城区）
+         */
+        function getRegionInfo(code) {
+            // 遍历addressCodes查找对应的地区名称
+            for (const [province, cities] of Object.entries(addressCodes)) {
+                for (const [city, districts] of Object.entries(cities)) {
+                    for (const [district, districtCode] of Object.entries(districts)) {
+                        if (districtCode === code) {
+                            return `${province}-${city}-${district}`;
+                        }
+                    }
+                }
+            }
+            return '未知地区';
+        }
+        
+        /**
+         * 搜索可能的顺序码
+         * @param {string} first14 - 前14位
+         * @param {string} checkChar - 校验码字符
+         * @param {string} gender - 性别筛选
+         * @returns {Array} - 可能的顺序码数组
+         */
+        function searchPossibleSequence(first14, checkChar, gender) {
+            // 校验码字符转数值
+            const C = checkChar.toUpperCase() === 'X' ? 10 : parseInt(checkChar);
+            
+            // 使用公式反推：C = (1 - S mod 11) mod 11
+            // 所以 S mod 11 = (1 - C) mod 11
+            const R = (1 - C) % 11;
+            
+            // 计算已知部分
+            let K = 0;
+            for (let i = 0; i < 14; i++) {
+                K += parseInt(first14[i]) * WEIGHTS[i];
+            }
+            
+            const w15 = WEIGHTS[14];
+            const w16 = WEIGHTS[15];
+            const w17 = WEIGHTS[16];
+            
+            const possibleCodes = [];
+            
+            // 枚举所有可能的顺序码 000-999
+            for (let seq = 0; seq < 1000; seq++) {
+                const a15 = Math.floor(seq / 100);
+                const a16 = Math.floor(seq / 10) % 10;
+                const a17 = seq % 10;
+                
+                // 性别筛选
+                if (gender) {
+                    if (gender === 'M' && a17 % 2 === 0) continue;  // 男性要求最后一位是奇数
+                    if (gender === 'F' && a17 % 2 === 1) continue;  // 女性要求最后一位是偶数
+                }
+                
+                // 计算加权和并取模
+                const S_mod = (K + a15 * w15 + a16 * w16 + a17 * w17) % 11;
+                
+                // 修复：确保R为正数进行比较
+                if (S_mod === R || S_mod === (R + 11)) {
+                    possibleCodes.push(`${a15}${a16}${a17}`);
+                }
+            }
+            
+            return possibleCodes;
+        }
+        
+        /**
+         * 执行顺序码搜索
+         */
+        function performSearch() {
+            const first14 = first14Input.value.trim();
+            const checkChar = checkDigitInput.value.trim().toUpperCase();
+            const gender = Array.from(genderRadios).find(radio => radio.checked).value;
+            
+            // 验证输入
+            if (first14.length !== 14 || !/^\d+$/.test(first14)) {
+                showNotification('错误', '前14位必须是14位数字！', 'error');
+                return;
+            }
+            
+            if (!/^[0-9X]$/.test(checkChar)) {
+                showNotification('错误', '校验码必须是0-9或X！', 'error');
+                return;
+            }
+            
+            // 显示加载状态
+            searchResultsLoading.classList.remove('hidden');
+            updateStatus('正在搜索...');
+            
+            // 使用setTimeout模拟异步操作，避免UI阻塞
+            setTimeout(() => {
+                // 执行搜索
+                const possibleCodes = searchPossibleSequence(first14, checkChar, gender);
+                
+                // 隐藏加载状态
+                searchResultsLoading.classList.add('hidden');
+                
+                // 显示搜索条件
+                searchConditions.innerHTML = `搜索条件:
+前14位: ${first14}
+校验码: ${checkChar}
+性别: ${gender ? (gender === 'M' ? '男性' : '女性') : '不限'}`;
+                
+                // 显示结果
+                if (possibleCodes.length > 0) {
+                    // 统计信息
+                    const maleCount = possibleCodes.filter(code => parseInt(code[2]) % 2 === 1).length;
+                    const femaleCount = possibleCodes.filter(code => parseInt(code[2]) % 2 === 0).length;
+                    
+                    let statsText = `找到 ${possibleCodes.length} 种可能的顺序码`;
+                    if (gender) {
+                        statsText += ` (${gender === 'M' ? '男性' : '女性'})`;
+                    } else {
+                        statsText += ` (男性: ${maleCount}, 女性: ${femaleCount})`;
+                    }
+                    
+                    searchStats.textContent = statsText;
+                    
+                    // 格式化结果显示，每行15个
+                    let resultsText = `共 ${possibleCodes.length} 种可能:\n\n`;
+                    
+                    for (let i = 0; i < possibleCodes.length; i += 15) {
+                        resultsText += possibleCodes.slice(i, i + 15).join(' ') + '\n';
+                    }
+                    
+                    resultsText += `\n顺序码范围: ${possibleCodes[0]} ~ ${possibleCodes[possibleCodes.length - 1]}`;
+                    
+                    // 添加统计信息
+                    resultsText += '\n\n统计信息:';
+                    if (!gender) {
+                        resultsText += `\n  男性顺序码: ${maleCount} 种 (最后一位为奇数)`;
+                        resultsText += `\n  女性顺序码: ${femaleCount} 种 (最后一位为偶数)`;
+                    }
+                    
+                    searchResults.textContent = resultsText;
+                    updateStatus(`搜索完成，找到 ${possibleCodes.length} 种可能`);
+                } else {
+                    searchStats.textContent = '没有找到符合条件的顺序码';
+                    searchResults.textContent = '没有找到符合条件的顺序码！\n请检查输入条件是否正确。';
+                    updateStatus('搜索完成，未找到结果');
+                }
+            }, 100); // 短暂延迟，让加载动画有时间显示
+        }
+        
+        /**
+         * 清空搜索选项卡
+         */
+        function clearSearch() {
+            first14Input.value = '';
+            checkDigitInput.value = '';
+            genderRadios[0].checked = true;
+            searchConditions.textContent = '';
+            searchResults.textContent = '';
+            searchStats.textContent = '';
+            updateStatus('已清空搜索条件');
+        }
+        
+        /**
+         * 复制搜索结果到剪贴板
+         */
+        function copySearchResults() {
+            const results = searchResults.textContent;
+            if (!results) {
+                showNotification('提示', '没有可复制的结果', 'info');
+                return;
+            }
+            
+            navigator.clipboard.writeText(results)
+                .then(() => {
+                    showNotification('成功', '结果已复制到剪贴板', 'success');
+                    updateStatus('结果已复制到剪贴板');
+                })
+                .catch(err => {
+                    showNotification('错误', '复制失败，请手动选择复制', 'error');
+                    console.error('复制失败:', err);
+                });
+        }
+        
+        /**
+         * 计算校验码
+         */
+        function calculateCheckDigit() {
+            const id17 = id17Input.value.trim();
+            
+            // 验证输入
+            if (id17.length !== 17 || !/^\d+$/.test(id17)) {
+                showNotification('错误', '请输入17位数字！', 'error');
+                return;
+            }
+            
+            // 显示加载状态
+            calculationPrompt.classList.add('hidden');
+            calculationResult.classList.add('hidden');
+            calculationLoading.classList.remove('hidden');
+            updateStatus('正在计算...');
+            
+            // 使用setTimeout模拟异步操作，避免UI阻塞
+            setTimeout(() => {
+                // 计算校验码
+                const checkDigit = calculateCheckDigitValue(id17);
+                
+                if (checkDigit === null) {
+                    showNotification('错误', '计算失败，请检查输入！', 'error');
+                    calculationLoading.classList.add('hidden');
+                    calculationPrompt.classList.remove('hidden');
+                    updateStatus('就绪');
+                    return;
+                }
+                
+                // 隐藏加载状态，显示结果
+                calculationLoading.classList.add('hidden');
+                calculationResult.classList.remove('hidden');
+                
+                // 显示结果
+                const fullId = id17 + checkDigit;
+                checkDigitResult.textContent = checkDigit;
+                fullIdResult.textContent = fullId;
+                
+                updateStatus(`计算完成，校验码为: ${checkDigit}`);
+            }, 500); // 短暂延迟，让加载动画有时间显示
+        }
+        
+        /**
+         * 清空计算选项卡
+         */
+        function clearCalculate() {
+            id17Input.value = '';
+            calculationResult.classList.add('hidden');
+            calculationPrompt.classList.remove('hidden');
+            updateStatus('已清空输入');
+        }
+        
+        /**
+         * 验证身份证号码
+         */
+        function verifyIdNumber() {
+            const idNumber = idNumberInput.value.trim().toUpperCase();
+            
+            // 验证输入
+            if (idNumber.length !== 18 || !/^\d{17}[0-9X]$/.test(idNumber)) {
+                showNotification('错误', '请输入18位有效的身份证号码！', 'error');
+                return;
+            }
+            
+            // 显示加载状态
+            verifyPrompt.classList.add('hidden');
+            verifySuccessResult.classList.add('hidden');
+            verifyErrorResult.classList.add('hidden');
+            verifyLoading.classList.remove('hidden');
+            updateStatus('正在查验...');
+            
+            // 使用setTimeout模拟异步操作，避免UI阻塞
+            setTimeout(() => {
+                // 提取各部分信息
+                const addressCode = idNumber.substring(0, 6);
+                const birthdate = idNumber.substring(6, 14);
+                const sequenceCode = idNumber.substring(14, 17);
+                const inputCheckDigitChar = idNumber.substring(17, 18);
+                
+                // 计算正确的校验码
+                const correctCheckDigitChar = calculateCheckDigitValue(idNumber.substring(0, 17));
+                
+                // 解析出生日期
+                const birthYear = birthdate.substring(0, 4);
+                const birthMonth = birthdate.substring(4, 6);
+                const birthDay = birthdate.substring(6, 8);
+                const formattedBirthdate = `${birthYear}年${birthMonth}月${birthDay}日`;
+                
+                // 解析性别
+                const genderCode = parseInt(sequenceCode[2]);
+                const gender = genderCode % 2 === 1 ? '男' : '女';
+                
+                // 获取地区信息
+                const regionInfo = getRegionInfo(addressCode);
+                
+                // 隐藏加载状态
+                verifyLoading.classList.add('hidden');
+                
+                // 验证校验码
+                if (inputCheckDigitChar === correctCheckDigitChar) {
+                    // 显示成功结果
+                    verifySuccessResult.classList.remove('hidden');
+                    verifiedIdNumber.textContent = idNumber;
+                    verifiedRegion.textContent = regionInfo;
+                    verifiedBirthdate.textContent = formattedBirthdate;
+                    verifiedGender.textContent = gender;
+                    
+                    updateStatus('查验完成，身份证号码有效');
+                    showNotification('成功', '身份证号码验证通过！', 'success');
+                } else {
+                    // 显示错误结果
+                    verifyErrorResult.classList.remove('hidden');
+                    inputCheckDigit.textContent = inputCheckDigitChar;
+                    correctCheckDigit.textContent = correctCheckDigitChar;
+                    first14OfErrorId.textContent = idNumber.substring(0, 14);
+                    inputCheckDigitRepeat.textContent = inputCheckDigitChar;
+                    
+                    // 搜索可能的顺序码
+                    const first14 = idNumber.substring(0, 14);
+                    const possibleCodes = searchPossibleSequence(first14, inputCheckDigitChar, '');
+                    
+                    // 显示可能的顺序码
+                    let possibleCodesHtml = '';
+                    if (possibleCodes.length > 0) {
+                        possibleCodesHtml = `<p class="text-gray-700 mb-2">可能的顺序码 (共 ${possibleCodes.length} 种):</p>`;
+                        possibleCodesHtml += '<div class="grid grid-cols-3 md:grid-cols-6 gap-2">';
+                        
+                        possibleCodes.forEach(code => {
+                            const codeGender = parseInt(code[2]) % 2 === 1 ? '男' : '女';
+                            possibleCodesHtml += `<div class="bg-gray-100 p-2 rounded text-center">
+                                <span class="font-mono">${code}</span>
+                                <span class="text-xs text-gray-500 ml-1">(${codeGender})</span>
+                            </div>`;
+                        });
+                        
+                        possibleCodesHtml += '</div>';
+                    } else {
+                        possibleCodesHtml = '<p class="text-gray-700">没有找到符合该校验码的顺序码</p>';
+                    }
+                    
+                    possibleSequences.innerHTML = possibleCodesHtml;
+                    
+                    updateStatus('查验完成，身份证号码无效');
+                    showNotification('错误', '身份证号码校验码错误！', 'error');
+                }
+            }, 500); // 短暂延迟，让加载动画有时间显示
+        }
+        
+        /**
+         * 清空查验选项卡
+         */
+        function clearVerify() {
+            idNumberInput.value = '';
+            verifyPrompt.classList.remove('hidden');
+            verifySuccessResult.classList.add('hidden');
+            verifyErrorResult.classList.add('hidden');
+            updateStatus('已清空输入');
+        }
+        
+        /**
+         * 生成身份证号码
+         */
+        function generateIdNumber() {
+            // 获取选择的信息
+            const province = provinceSelect.value;
+            const city = citySelect.value;
+            const district = districtSelect.value;
+            const year = yearSelect.value;
+            const month = monthSelect.value;
+            const day = daySelect.value;
+            const gender = document.getElementById('genderMale').checked ? 'male' : 'female';
+            const count = parseInt(generateCountInput.value) || 1;
+            
+            // 验证输入
+            if (!province || !city || !district || !year || !month || !day) {
+                showNotification('错误', '请完整填写所有信息！', 'error');
+                return;
+            }
+            
+            if (count < 1 || count > 100) {
+                showNotification('错误', '生成数量必须在1-100之间！', 'error');
+                return;
+            }
+            
+            // 获取地址码
+            const addressCode = addressCodes[province][city][district];
+            
+            // 格式化出生日期
+            const formattedYear = year;
+            const formattedMonth = month.toString().padStart(2, '0');
+            const formattedDay = day.toString().padStart(2, '0');
+            const birthdate = `${formattedYear}${formattedMonth}${formattedDay}`;
+            
+            // 生成身份证号码
+            let generatedIds = [];
+            
+            for (let i = 0; i < count; i++) {
+                // 生成顺序码（根据性别）
+                let sequenceCode;
+                do {
+                    // 生成000-999的随机数
+                    sequenceCode = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+                    // 根据性别筛选最后一位
+                } while (
+                    (gender === 'male' && parseInt(sequenceCode[2]) % 2 === 0) ||
+                    (gender === 'female' && parseInt(sequenceCode[2]) % 2 === 1)
+                );
+                
+                // 拼接前17位
+                const first17 = `${addressCode}${birthdate}${sequenceCode}`;
+                
+                // 计算校验码
+                const checkDigit = calculateCheckDigitValue(first17);
+                
+                // 拼接完整身份证号码
+                const fullId = `${first17}${checkDigit}`;
+                generatedIds.push(fullId);
+            }
+            
+            // 显示结果
+            generatedIdResult.textContent = generatedIds.join('\n');
+            copyGeneratedBtn.classList.remove('hidden');
+            
+            updateStatus(`生成完成，共生成 ${count} 个身份证号码`);
+            showNotification('成功', `已生成 ${count} 个身份证号码！`, 'success');
+        }
+        
+        /**
+         * 清空生成表单
+         */
+        function clearGenerateForm() {
+            provinceSelect.value = '';
+            citySelect.innerHTML = '<option value="">请选择城市</option>';
+            districtSelect.innerHTML = '<option value="">请选择区县</option>';
+            yearSelect.value = '';
+            monthSelect.value = '';
+            daySelect.innerHTML = '<option value="">请选择日期</option>';
+            document.getElementById('genderMale').checked = true;
+            generateCountInput.value = 1;
+            generatedIdResult.textContent = '';
+            copyGeneratedBtn.classList.add('hidden');
+            
+            updateStatus('已清空生成表单');
+        }
+        
+        /**
+         * 复制生成的身份证号码
+         */
+        function copyGeneratedId() {
+            const generatedIds = generatedIdResult.textContent;
+            if (!generatedIds) {
+                showNotification('提示', '没有可复制的结果', 'info');
+                return;
+            }
+            
+            navigator.clipboard.writeText(generatedIds)
+                .then(() => {
+                    showNotification('成功', '身份证号码已复制到剪贴板', 'success');
+                    updateStatus('身份证号码已复制到剪贴板');
+                })
+                .catch(err => {
+                    showNotification('错误', '复制失败，请手动选择复制', 'error');
+                    console.error('复制失败:', err);
+                });
+        }
+        
+        /**
+         * 更新状态栏
+         * @param {string} message - 状态消息
+         */
+        function updateStatus(message) {
+            statusBar.querySelector('span').textContent = message;
+        }
+        
+        /**
+         * 显示通知
+         * @param {string} title - 通知标题
+         * @param {string} message - 通知消息
+         * @param {string} type - 通知类型 (success, error, info, warning)
+         */
+        function showNotification(title, message, type = 'info') {
+            const notificationTitle = document.getElementById('notificationTitle');
+            const notificationMessage = document.getElementById('notificationMessage');
+            const notificationIcon = document.getElementById('notificationIcon');
+            
+            // 设置通知内容
+            notificationTitle.textContent = title;
+            notificationMessage.textContent = message;
+            
+            // 设置通知图标和样式
+            let iconClass, bgColor;
+            switch (type) {
+                case 'success':
+                    iconClass = 'fa fa-check-circle text-green-500 text-xl';
+                    bgColor = 'bg-green-50';
+                    break;
+                case 'error':
+                    iconClass = 'fa fa-exclamation-circle text-red-500 text-xl';
+                    bgColor = 'bg-red-50';
+                    break;
+                case 'warning':
+                    iconClass = 'fa fa-exclamation-triangle text-yellow-500 text-xl';
+                    bgColor = 'bg-yellow-50';
+                    break;
+                default:
+                    iconClass = 'fa fa-info-circle text-blue-500 text-xl';
+                    bgColor = 'bg-blue-50';
+            }
+            
+            notificationIcon.innerHTML = `<i class="${iconClass}"></i>`;
+            notification.querySelector('div').classList.add(bgColor);
+            
+            // 显示通知
+            notification.classList.remove('translate-y-full', 'opacity-0');
+            notification.classList.add('translate-y-0', 'opacity-100');
+            
+            // 3秒后自动隐藏
+            setTimeout(hideNotification, 3000);
+        }
+        
+        /**
+         * 隐藏通知
+         */
+        function hideNotification() {
+            notification.classList.remove('translate-y-0', 'opacity-100');
+            notification.classList.add('translate-y-full', 'opacity-0');
+            
+            // 清除样式
+            setTimeout(() => {
+                const notificationDiv = notification.querySelector('div');
+                notificationDiv.classList.remove('bg-green-50', 'bg-red-50', 'bg-yellow-50', 'bg-blue-50');
+            }, 300);
+        }
+    </script>
+</body>
+</html>
