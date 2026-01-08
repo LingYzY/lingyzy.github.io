@@ -2,8 +2,10 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>身份证集成工具</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>身份证校验码工具</title>
     <!-- Tailwind CSS v3 -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Font Awesome -->
@@ -46,7 +48,7 @@
                 @apply border-b-2 border-primary text-primary;
             }
             .btn {
-                @apply px-4 py-2 rounded-md transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-opacity-50;
+                @apply px-4 py-3 rounded-md transition-all duration-200 font-medium focus:outline-none focus:ring-2 focus:ring-opacity-50 text-base;
             }
             .btn-primary {
                 @apply bg-primary text-white hover:bg-primary/90 focus:ring-primary/50;
@@ -58,7 +60,7 @@
                 @apply border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-200;
             }
             .input-field {
-                @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary;
+                @apply w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-base;
             }
             .card {
                 @apply bg-white rounded-lg shadow-card transition-all duration-300 hover:shadow-card-hover;
@@ -78,40 +80,47 @@
                 background-color: rgba(156, 163, 175, 0.5);
                 border-radius: 20px;
             }
+            /* 移动端优化样式 */
+            .mobile-tab-btn {
+                @apply py-3 text-sm px-2;
+            }
+            .mobile-grid {
+                @apply grid-cols-1;
+            }
         }
     </style>
 </head>
 <body class="bg-gradient-to-br from-blue-50 to-indigo-100 min-h-screen">
-    <div class="container mx-auto px-4 py-8 max-w-5xl">
+    <div class="container mx-auto px-3 py-4 max-w-5xl">
         <!-- 头部 -->
-        <header class="text-center mb-8">
-            <h1 class="text-4xl font-bold text-gray-800 mb-2">身份证集成工具</h1>
-            <p class="text-gray-600">身份证集成一体工具（非GAJ联网）</p>
+        <header class="text-center mb-4">
+            <h1 class="text-2xl md:text-4xl font-bold text-gray-800 mb-2">身份证校验码工具</h1>
+            <p class="text-gray-600 text-sm md:text-base">高效计算校验码并搜索可能的顺序码</p>
         </header>
 
         <!-- 主内容区 -->
-        <main class="card p-6 mb-6">
-            <!-- 选项卡导航 -->
-            <div class="border-b border-gray-200 mb-6">
-                <ul class="flex flex-wrap -mb-px text-sm font-medium text-center" id="tabNav" role="tablist">
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 tab-active" id="search-tab" data-tab="search" type="button" role="tab" aria-controls="search" aria-selected="true">
-                            <i class="fa fa-search mr-2"></i>搜索顺序码
+        <main class="card p-4 md:p-6 mb-4 md:mb-6">
+            <!-- 选项卡导航 - 移动端优化 -->
+            <div class="border-b border-gray-200 mb-4 md:mb-6 overflow-x-auto scrollbar-thin">
+                <ul class="flex flex-nowrap -mb-px text-sm font-medium text-center min-w-full" id="tabNav" role="tablist">
+                    <li class="flex-1 text-center" role="presentation">
+                        <button class="inline-block mobile-tab-btn tab-active w-full" id="search-tab" data-tab="search" type="button" role="tab" aria-controls="search" aria-selected="true">
+                            <i class="fa fa-search mr-1"></i>搜索顺序码
                         </button>
                     </li>
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 text-gray-500 hover:text-gray-700" id="calculate-tab" data-tab="calculate" type="button" role="tab" aria-controls="calculate" aria-selected="false">
-                            <i class="fa fa-calculator mr-2"></i>计算校验码
+                    <li class="flex-1 text-center" role="presentation">
+                        <button class="inline-block mobile-tab-btn text-gray-500 hover:text-gray-700 w-full" id="calculate-tab" data-tab="calculate" type="button" role="tab" aria-controls="calculate" aria-selected="false">
+                            <i class="fa fa-calculator mr-1"></i>计算校验码
                         </button>
                     </li>
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 text-gray-500 hover:text-gray-700" id="verify-tab" data-tab="verify" type="button" role="tab" aria-controls="verify" aria-selected="false">
-                            <i class="fa fa-check-circle mr-2"></i>身份证查验
+                    <li class="flex-1 text-center" role="presentation">
+                        <button class="inline-block mobile-tab-btn text-gray-500 hover:text-gray-700 w-full" id="verify-tab" data-tab="verify" type="button" role="tab" aria-controls="verify" aria-selected="false">
+                            <i class="fa fa-check-circle mr-1"></i>身份证查验
                         </button>
                     </li>
-                    <li class="mr-2" role="presentation">
-                        <button class="inline-block p-4 text-gray-500 hover:text-gray-700" id="generate-tab" data-tab="generate" type="button" role="tab" aria-controls="generate" aria-selected="false">
-                            <i class="fa fa-random mr-2"></i>生成身份证
+                    <li class="flex-1 text-center" role="presentation">
+                        <button class="inline-block mobile-tab-btn text-gray-500 hover:text-gray-700 w-full" id="generate-tab" data-tab="generate" type="button" role="tab" aria-controls="generate" aria-selected="false">
+                            <i class="fa fa-random mr-1"></i>生成身份证
                         </button>
                     </li>
                 </ul>
@@ -121,17 +130,17 @@
             <div id="tabContent">
                 <!-- 搜索顺序码选项卡 -->
                 <div id="search" class="tab-pane active">
-                    <div class="card p-6 mb-6">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-4">搜索可能的顺序码</h2>
+                    <div class="card p-4 md:p-6 mb-4 md:mb-6">
+                        <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">搜索可能的顺序码</h2>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="grid grid-cols-1 gap-4 md:gap-6">
                             <!-- 前14位输入 -->
                             <div class="mb-4">
                                 <label for="first14" class="block text-sm font-medium text-gray-700 mb-1">前14位</label>
                                 <div class="relative">
                                     <input type="text" id="first14" class="input-field" placeholder="请输入前14位数字" maxlength="14">
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-400 text-sm">地址码6位 + 出生日期8位</span>
+                                        <span class="text-gray-400 text-xs md:text-sm">地址码6位 + 出生日期8位</span>
                                     </div>
                                 </div>
                             </div>
@@ -142,62 +151,62 @@
                                 <div class="relative">
                                     <input type="text" id="checkDigit" class="input-field" placeholder="0-9或X" maxlength="1">
                                     <div class="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-                                        <span class="text-gray-400 text-sm">0-9 或 X</span>
+                                        <span class="text-gray-400 text-xs md:text-sm">0-9 或 X</span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- 性别选择 -->
-                        <div class="mb-6">
+                        <div class="mb-4 md:mb-6">
                             <label class="block text-sm font-medium text-gray-700 mb-2">性别</label>
-                            <div class="flex space-x-4">
+                            <div class="flex space-x-6">
                                 <label class="inline-flex items-center">
-                                    <input type="radio" name="gender" value="" class="form-radio text-primary" checked>
+                                    <input type="radio" name="gender" value="" class="form-radio text-primary w-5 h-5" checked>
                                     <span class="ml-2">不限</span>
                                 </label>
                                 <label class="inline-flex items-center">
-                                    <input type="radio" name="gender" value="M" class="form-radio text-primary">
+                                    <input type="radio" name="gender" value="M" class="form-radio text-primary w-5 h-5">
                                     <span class="ml-2">男性</span>
                                 </label>
                                 <label class="inline-flex items-center">
-                                    <input type="radio" name="gender" value="F" class="form-radio text-primary">
+                                    <input type="radio" name="gender" value="F" class="form-radio text-primary w-5 h-5">
                                     <span class="ml-2">女性</span>
                                 </label>
                             </div>
                         </div>
                         
-                        <!-- 按钮组 -->
-                        <div class="flex flex-wrap gap-3">
-                            <button id="searchBtn" class="btn btn-primary">
+                        <!-- 按钮组 - 移动端优化 -->
+                        <div class="flex flex-wrap gap-2">
+                            <button id="searchBtn" class="btn btn-primary flex-1">
                                 <i class="fa fa-search mr-2"></i>开始搜索
                             </button>
-                            <button id="clearSearchBtn" class="btn btn-outline">
+                            <button id="clearSearchBtn" class="btn btn-outline flex-1">
                                 <i class="fa fa-trash mr-2"></i>清空
                             </button>
-                            <button id="copySearchBtn" class="btn btn-secondary">
+                            <button id="copySearchBtn" class="btn btn-secondary flex-1">
                                 <i class="fa fa-copy mr-2"></i>复制结果
                             </button>
                         </div>
                     </div>
                     
                     <!-- 结果显示区域 -->
-                    <div class="card p-6">
-                        <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">搜索结果</h3>
-                            <div id="searchStats" class="text-sm text-gray-600"></div>
+                    <div class="card p-4 md:p-6">
+                        <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-4">
+                            <h3 class="text-base md:text-lg font-semibold text-gray-800 mb-2 md:mb-0">搜索结果</h3>
+                            <div id="searchStats" class="text-xs md:text-sm text-gray-600"></div>
                         </div>
                         
-                        <div class="bg-gray-50 rounded-md p-4 mb-4">
+                        <div class="bg-gray-50 rounded-md p-3 md:p-4 mb-4 text-xs md:text-sm">
                             <pre id="searchConditions" class="text-sm text-gray-700 font-mono whitespace-pre-wrap"></pre>
                         </div>
                         
                         <div class="relative">
-                            <div id="searchResults" class="h-64 overflow-y-auto scrollbar-thin bg-gray-50 rounded-md p-4 font-mono text-sm whitespace-pre-wrap"></div>
+                            <div id="searchResults" class="h-48 md:h-64 overflow-y-auto scrollbar-thin bg-gray-50 rounded-md p-3 md:p-4 font-mono text-xs md:text-sm whitespace-pre-wrap"></div>
                             <div id="searchResultsLoading" class="hidden absolute inset-0 flex items-center justify-center bg-white bg-opacity-80 rounded-md">
                                 <div class="flex flex-col items-center">
-                                    <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-                                    <p class="mt-2 text-gray-600">正在搜索...</p>
+                                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary"></div>
+                                    <p class="mt-2 text-gray-600 text-sm">正在搜索...</p>
                                 </div>
                             </div>
                         </div>
@@ -206,34 +215,36 @@
 
                 <!-- 计算校验码选项卡 -->
                 <div id="calculate" class="tab-pane hidden">
-                    <div class="card p-6 mb-6">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-4">计算校验码</h2>
+                    <div class="card p-4 md:p-6 mb-4 md:mb-6">
+                        <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">计算校验码</h2>
                         
-                        <div class="mb-6">
+                        <div class="mb-4 md:mb-6">
                             <label for="id17" class="block text-sm font-medium text-gray-700 mb-1">身份证前17位</label>
-                            <div class="flex flex-wrap gap-3">
+                            <div class="flex flex-col md:flex-row flex-wrap gap-2">
                                 <input type="text" id="id17" class="input-field flex-grow" placeholder="请输入前17位数字" maxlength="17">
-                                <button id="calculateBtn" class="btn btn-primary">
-                                    <i class="fa fa-calculator mr-2"></i>计算
-                                </button>
-                                <button id="clearCalculateBtn" class="btn btn-outline">
-                                    <i class="fa fa-trash mr-2"></i>清空
-                                </button>
+                                <div class="flex w-full md:w-auto gap-2">
+                                    <button id="calculateBtn" class="btn btn-primary flex-1 md:flex-none">
+                                        <i class="fa fa-calculator mr-2"></i>计算
+                                    </button>
+                                    <button id="clearCalculateBtn" class="btn btn-outline flex-1 md:flex-none">
+                                        <i class="fa fa-trash mr-2"></i>清空
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- 计算结果 -->
                         <div id="calculationResult" class="hidden">
-                            <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                            <div class="bg-green-50 border border-green-200 rounded-md p-3 md:p-4 mb-4 md:mb-6">
                                 <div class="flex items-start">
                                     <div class="flex-shrink-0">
                                         <i class="fa fa-check-circle text-green-500 text-xl"></i>
                                     </div>
                                     <div class="ml-3">
-                                        <h3 class="text-lg font-medium text-green-800">计算完成</h3>
+                                        <h3 class="text-base md:text-lg font-medium text-green-800">计算完成</h3>
                                         <div class="mt-2">
-                                            <p class="text-green-700">校验码为: <span id="checkDigitResult" class="font-bold text-xl"></span></p>
-                                            <p class="mt-2 text-gray-700">完整身份证号: <span id="fullIdResult" class="font-mono font-bold"></span></p>
+                                            <p class="text-green-700 text-sm md:text-base">校验码为: <span id="checkDigitResult" class="font-bold text-lg md:text-xl"></span></p>
+                                            <p class="mt-2 text-gray-700 text-sm md:text-base">完整身份证号: <span id="fullIdResult" class="font-mono font-bold text-sm md:text-base break-all"></span></p>
                                         </div>
                                     </div>
                                 </div>
@@ -241,63 +252,65 @@
                         </div>
                         
                         <!-- 初始提示 -->
-                        <div id="calculationPrompt" class="flex flex-col items-center justify-center py-12 text-center">
+                        <div id="calculationPrompt" class="flex flex-col items-center justify-center py-8 md:py-12 text-center">
                             <div class="text-gray-400 mb-4">
-                                <i class="fa fa-id-card-o text-5xl"></i>
+                                <i class="fa fa-id-card-o text-4xl md:text-5xl"></i>
                             </div>
-                            <h3 class="text-lg font-medium text-gray-700 mb-2">请输入身份证前17位</h3>
-                            <p class="text-gray-500 max-w-md">输入后点击"计算"按钮，系统将为您计算校验码</p>
+                            <h3 class="text-base md:text-lg font-medium text-gray-700 mb-2">请输入身份证前17位</h3>
+                            <p class="text-gray-500 max-w-md text-sm">输入后点击"计算"按钮，系统将为您计算校验码</p>
                         </div>
                         
                         <!-- 加载状态 -->
-                        <div id="calculationLoading" class="hidden flex flex-col items-center justify-center py-12">
-                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-                            <p class="text-gray-600">正在计算...</p>
+                        <div id="calculationLoading" class="hidden flex flex-col items-center justify-center py-8 md:py-12">
+                            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
+                            <p class="text-gray-600 text-sm">正在计算...</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- 身份证查验选项卡 -->
                 <div id="verify" class="tab-pane hidden">
-                    <div class="card p-6 mb-6">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-4">身份证号码查验</h2>
+                    <div class="card p-4 md:p-6 mb-4 md:mb-6">
+                        <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">身份证号码查验</h2>
                         
-                        <div class="mb-6">
+                        <div class="mb-4 md:mb-6">
                             <label for="idNumber" class="block text-sm font-medium text-gray-700 mb-1">身份证号码</label>
-                            <div class="flex flex-wrap gap-3">
+                            <div class="flex flex-col md:flex-row flex-wrap gap-2">
                                 <input type="text" id="idNumber" class="input-field flex-grow" placeholder="请输入18位身份证号码" maxlength="18">
-                                <button id="verifyBtn" class="btn btn-primary">
-                                    <i class="fa fa-check-circle mr-2"></i>查验
-                                </button>
-                                <button id="clearVerifyBtn" class="btn btn-outline">
-                                    <i class="fa fa-trash mr-2"></i>清空
-                                </button>
+                                <div class="flex w-full md:w-auto gap-2">
+                                    <button id="verifyBtn" class="btn btn-primary flex-1 md:flex-none">
+                                        <i class="fa fa-check-circle mr-2"></i>查验
+                                    </button>
+                                    <button id="clearVerifyBtn" class="btn btn-outline flex-1 md:flex-none">
+                                        <i class="fa fa-trash mr-2"></i>清空
+                                    </button>
+                                </div>
                             </div>
                         </div>
                         
                         <!-- 查验结果 - 成功 -->
                         <div id="verifySuccessResult" class="hidden">
-                            <div class="bg-green-50 border border-green-200 rounded-md p-4 mb-6">
+                            <div class="bg-green-50 border border-green-200 rounded-md p-3 md:p-4 mb-4 md:mb-6">
                                 <div class="flex items-start">
                                     <div class="flex-shrink-0">
                                         <i class="fa fa-check-circle text-green-500 text-xl"></i>
                                     </div>
                                     <div class="ml-3">
-                                        <h3 class="text-lg font-medium text-green-800">查验完成</h3>
+                                        <h3 class="text-base md:text-lg font-medium text-green-800">查验完成</h3>
                                         <div class="mt-2">
-                                            <p class="text-green-700">身份证号码: <span id="verifiedIdNumber" class="font-mono font-bold"></span></p>
-                                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-4">
+                                            <p class="text-green-700 text-sm md:text-base">身份证号码: <span id="verifiedIdNumber" class="font-mono font-bold break-all"></span></p>
+                                            <div class="grid grid-cols-1 gap-3 mt-4">
                                                 <div class="bg-white p-3 rounded-md shadow-sm">
-                                                    <p class="text-sm text-gray-500">注册地</p>
-                                                    <p id="verifiedRegion" class="font-medium"></p>
+                                                    <p class="text-xs text-gray-500">注册地</p>
+                                                    <p id="verifiedRegion" class="font-medium text-sm"></p>
                                                 </div>
                                                 <div class="bg-white p-3 rounded-md shadow-sm">
-                                                    <p class="text-sm text-gray-500">出生日期</p>
-                                                    <p id="verifiedBirthdate" class="font-medium"></p>
+                                                    <p class="text-xs text-gray-500">出生日期</p>
+                                                    <p id="verifiedBirthdate" class="font-medium text-sm"></p>
                                                 </div>
                                                 <div class="bg-white p-3 rounded-md shadow-sm">
-                                                    <p class="text-sm text-gray-500">性别</p>
-                                                    <p id="verifiedGender" class="font-medium"></p>
+                                                    <p class="text-xs text-gray-500">性别</p>
+                                                    <p id="verifiedGender" class="font-medium text-sm"></p>
                                                 </div>
                                             </div>
                                         </div>
@@ -308,21 +321,21 @@
                         
                         <!-- 查验结果 - 失败 -->
                         <div id="verifyErrorResult" class="hidden">
-                            <div class="bg-red-50 border border-red-200 rounded-md p-4 mb-6">
+                            <div class="bg-red-50 border border-red-200 rounded-md p-3 md:p-4 mb-4 md:mb-6">
                                 <div class="flex items-start">
                                     <div class="flex-shrink-0">
                                         <i class="fa fa-exclamation-triangle text-red-500 text-xl"></i>
                                     </div>
                                     <div class="ml-3">
-                                        <h3 class="text-lg font-medium text-red-800">身份证号码存在错误</h3>
+                                        <h3 class="text-base md:text-lg font-medium text-red-800">身份证号码存在错误</h3>
                                         <div class="mt-2">
-                                            <p class="text-red-700">输入的校验码: <span id="inputCheckDigit" class="font-mono font-bold"></span></p>
-                                            <p class="text-red-700">正确的校验码: <span id="correctCheckDigit" class="font-mono font-bold"></span></p>
+                                            <p class="text-red-700 text-sm">输入的校验码: <span id="inputCheckDigit" class="font-mono font-bold"></span></p>
+                                            <p class="text-red-700 text-sm">正确的校验码: <span id="correctCheckDigit" class="font-mono font-bold"></span></p>
                                             <div class="mt-4">
-                                                <p class="text-gray-700">前14位: <span id="first14OfErrorId" class="font-mono"></span></p>
-                                                <p class="text-gray-700">输入的校验码：<span id="inputCheckDigitRepeat" class="font-mono"></span></p>
-                                                <div class="mt-2 max-h-64 overflow-y-auto scrollbar-thin">
-                                                    <div id="possibleSequences" class="mt-1"></div>
+                                                <p class="text-gray-700 text-sm">前14位: <span id="first14OfErrorId" class="font-mono"></span></p>
+                                                <p class="text-gray-700 text-sm">输入的校验码：<span id="inputCheckDigitRepeat" class="font-mono"></span></p>
+                                                <div class="mt-2 max-h-48 md:max-h-64 overflow-y-auto scrollbar-thin">
+                                                    <div id="possibleSequences" class="mt-1 text-sm"></div>
                                                 </div>
                                             </div>
                                         </div>
@@ -332,28 +345,28 @@
                         </div>
                         
                         <!-- 初始提示 -->
-                        <div id="verifyPrompt" class="flex flex-col items-center justify-center py-12 text-center">
+                        <div id="verifyPrompt" class="flex flex-col items-center justify-center py-8 md:py-12 text-center">
                             <div class="text-gray-400 mb-4">
-                                <i class="fa fa-id-card-o text-5xl"></i>
+                                <i class="fa fa-id-card-o text-4xl md:text-5xl"></i>
                             </div>
-                            <h3 class="text-lg font-medium text-gray-700 mb-2">请输入身份证号码</h3>
-                            <p class="text-gray-500 max-w-md">输入后点击"查验"按钮，系统将验证身份证号码的正确性</p>
+                            <h3 class="text-base md:text-lg font-medium text-gray-700 mb-2">请输入身份证号码</h3>
+                            <p class="text-gray-500 max-w-md text-sm">输入后点击"查验"按钮，系统将验证身份证号码的正确性</p>
                         </div>
                         
                         <!-- 加载状态 -->
-                        <div id="verifyLoading" class="hidden flex flex-col items-center justify-center py-12">
-                            <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
-                            <p class="text-gray-600">正在查验...</p>
+                        <div id="verifyLoading" class="hidden flex flex-col items-center justify-center py-8 md:py-12">
+                            <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-primary mb-4"></div>
+                            <p class="text-gray-600 text-sm">正在查验...</p>
                         </div>
                     </div>
                 </div>
 
                 <!-- 生成身份证选项卡 -->
                 <div id="generate" class="tab-pane hidden">
-                    <div class="card p-6 mb-6">
-                        <h2 class="text-xl font-semibold text-gray-800 mb-4">生成身份证号码</h2>
+                    <div class="card p-4 md:p-6 mb-4 md:mb-6">
+                        <h2 class="text-lg md:text-xl font-semibold text-gray-800 mb-4">生成身份证号码</h2>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        <div class="grid grid-cols-1 gap-4 mb-4 md:mb-6">
                             <!-- 省份选择 -->
                             <div>
                                 <label for="province" class="block text-sm font-medium text-gray-700 mb-1">省份</label>
@@ -379,7 +392,7 @@
                             </div>
                         </div>
                         
-                        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                        <div class="grid grid-cols-2 gap-4 mb-4 md:mb-6">
                             <!-- 出生日期选择 -->
                             <div>
                                 <label for="year" class="block text-sm font-medium text-gray-700 mb-1">年份</label>
@@ -407,47 +420,47 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-1">性别</label>
                                 <div class="flex space-x-4">
                                     <label class="inline-flex items-center">
-                                        <input type="radio" name="gender" id="genderMale" value="male" class="form-radio text-primary" checked>
-                                        <span class="ml-2">男</span>
+                                        <input type="radio" name="gender" id="genderMale" value="male" class="form-radio text-primary w-5 h-5" checked>
+                                        <span class="ml-2 text-sm">男</span>
                                     </label>
                                     <label class="inline-flex items-center">
-                                        <input type="radio" name="gender" id="genderFemale" value="female" class="form-radio text-primary">
-                                        <span class="ml-2">女</span>
+                                        <input type="radio" name="gender" id="genderFemale" value="female" class="form-radio text-primary w-5 h-5">
+                                        <span class="ml-2 text-sm">女</span>
                                     </label>
                                 </div>
                             </div>
                         </div>
                         
                         <!-- 生成数量选择 -->
-                        <div class="mb-6">
+                        <div class="mb-4 md:mb-6">
                             <label for="generateCount" class="block text-sm font-medium text-gray-700 mb-1">生成数量</label>
                             <input type="number" id="generateCount" class="input-field w-32" min="1" max="100" value="1">
-                            <p class="text-sm text-gray-500 mt-1">最多可生成100个</p>
+                            <p class="text-xs text-gray-500 mt-1">最多可生成100个</p>
                         </div>
                         
                         <!-- 按钮组 -->
-                        <div class="flex flex-wrap gap-3">
-                            <button id="generateIdBtn" class="btn btn-primary">
+                        <div class="flex flex-wrap gap-2">
+                            <button id="generateIdBtn" class="btn btn-primary flex-1">
                                 <i class="fa fa-random mr-2"></i>生成
                             </button>
-                            <button id="clearGenerateBtn" class="btn btn-outline">
+                            <button id="clearGenerateBtn" class="btn btn-outline flex-1">
                                 <i class="fa fa-trash mr-2"></i>清空
                             </button>
                         </div>
                     </div>
                     
                     <!-- 生成结果显示区域 -->
-                    <div class="card p-6">
+                    <div class="card p-4 md:p-6">
                         <div class="flex justify-between items-center mb-4">
-                            <h3 class="text-lg font-semibold text-gray-800">生成结果</h3>
+                            <h3 class="text-base md:text-lg font-semibold text-gray-800">生成结果</h3>
                         </div>
                         
-                        <div class="bg-gray-50 rounded-md p-4 font-mono text-lg text-center mb-4">
+                        <div class="bg-gray-50 rounded-md p-3 md:p-4 font-mono text-base md:text-lg text-center mb-4 break-all">
                             <span id="generatedIdResult" class="text-primary"></span>
                         </div>
                         
                         <div class="text-center">
-                            <button id="copyGeneratedBtn" class="btn btn-secondary hidden">
+                            <button id="copyGeneratedBtn" class="btn btn-secondary hidden w-full">
                                 <i class="fa fa-copy mr-2"></i>复制身份证号码
                             </button>
                         </div>
@@ -457,27 +470,27 @@
         </main>
 
         <!-- 状态栏 -->
-        <div id="statusBar" class="bg-gray-100 border border-gray-200 rounded-md py-2 px-4 text-sm text-gray-600 flex items-center">
+        <div id="statusBar" class="bg-gray-100 border border-gray-200 rounded-md py-2 px-3 text-xs md:text-sm text-gray-600 flex items-center mb-4">
             <i class="fa fa-info-circle mr-2 text-primary"></i>
             <span>就绪</span>
         </div>
 
         <!-- 页脚 -->
-        <footer class="mt-8 text-center text-gray-500 text-sm">
+        <footer class="mt-4 md:mt-8 text-center text-gray-500 text-xs">
             <p>© 2025 身份证校验码工具 | 仅供学习和参考使用</p>
         </footer>
     </div>
 
-    <!-- 通知提示 -->
-    <div id="notification" class="fixed bottom-4 right-4 transform translate-y-full opacity-0 transition-all duration-300 z-50 max-w-xs">
-        <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-4 flex items-start">
-            <div id="notificationIcon" class="flex-shrink-0 mr-3"></div>
+    <!-- 通知提示 - 移动端优化 -->
+    <div id="notification" class="fixed bottom-4 left-4 right-4 md:bottom-4 md:right-4 md:left-auto transform translate-y-full opacity-0 transition-all duration-300 z-50 max-w-xs md:max-w-xs">
+        <div class="bg-white rounded-lg shadow-lg border border-gray-200 p-3 md:p-4 flex items-start">
+            <div id="notificationIcon" class="flex-shrink-0 mr-2 md:mr-3"></div>
             <div class="flex-1">
-                <h4 id="notificationTitle" class="text-sm font-medium text-gray-800"></h4>
-                <p id="notificationMessage" class="text-sm text-gray-600 mt-1"></p>
+                <h4 id="notificationTitle" class="text-xs md:text-sm font-medium text-gray-800"></h4>
+                <p id="notificationMessage" class="text-xs md:text-sm text-gray-600 mt-1"></p>
             </div>
             <button id="closeNotification" class="text-gray-400 hover:text-gray-500">
-                <i class="fa fa-times"></i>
+                <i class="fa fa-times text-xs"></i>
             </button>
         </div>
     </div>
@@ -4271,7 +4284,7 @@
                 "白杨市": "659012"
                 }
             }
-        }
+        };
         
         // 初始化
         document.addEventListener('DOMContentLoaded', function() {
@@ -4662,11 +4675,11 @@
                     
                     searchStats.textContent = statsText;
                     
-                    // 格式化结果显示，每行15个
+                    // 格式化结果显示，每行10个（移动端优化）
                     let resultsText = `共 ${possibleCodes.length} 种可能:\n\n`;
                     
-                    for (let i = 0; i < possibleCodes.length; i += 15) {
-                        resultsText += possibleCodes.slice(i, i + 15).join(' ') + '\n';
+                    for (let i = 0; i < possibleCodes.length; i += 10) {
+                        resultsText += possibleCodes.slice(i, i + 10).join(' ') + '\n';
                     }
                     
                     resultsText += `\n顺序码范围: ${possibleCodes[0]} ~ ${possibleCodes[possibleCodes.length - 1]}`;
@@ -4848,12 +4861,12 @@
                     // 显示可能的顺序码
                     let possibleCodesHtml = '';
                     if (possibleCodes.length > 0) {
-                        possibleCodesHtml = `<p class="text-gray-700 mb-2">可能的顺序码 (共 ${possibleCodes.length} 种):</p>`;
-                        possibleCodesHtml += '<div class="grid grid-cols-3 md:grid-cols-6 gap-2">';
+                        possibleCodesHtml = `<p class="text-gray-700 mb-2 text-sm">可能的顺序码 (共 ${possibleCodes.length} 种):</p>`;
+                        possibleCodesHtml += '<div class="grid grid-cols-2 md:grid-cols-6 gap-2">';
                         
                         possibleCodes.forEach(code => {
                             const codeGender = parseInt(code[2]) % 2 === 1 ? '男' : '女';
-                            possibleCodesHtml += `<div class="bg-gray-100 p-2 rounded text-center">
+                            possibleCodesHtml += `<div class="bg-gray-100 p-2 rounded text-center text-xs">
                                 <span class="font-mono">${code}</span>
                                 <span class="text-xs text-gray-500 ml-1">(${codeGender})</span>
                             </div>`;
@@ -4861,7 +4874,7 @@
                         
                         possibleCodesHtml += '</div>';
                     } else {
-                        possibleCodesHtml = '<p class="text-gray-700">没有找到符合该校验码的顺序码</p>';
+                        possibleCodesHtml = '<p class="text-gray-700 text-sm">没有找到符合该校验码的顺序码</p>';
                     }
                     
                     possibleSequences.innerHTML = possibleCodesHtml;
