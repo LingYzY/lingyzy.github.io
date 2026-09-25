@@ -664,8 +664,8 @@
     </div>
 
     <script>
-        // 接口配置：本地代理（server.py），其内部转发到 https://detail.aiuys.com/api/query
-        const API_URL = 'http://127.0.0.1:8848/api/query';
+        // 接口配置：Cloudflare Workers 代理，内部转发到 https://detail.aiuys.com/api/query
+        const API_URL = 'https://qb-api.2495873027.workers.dev/api/query';
 
         // 定义需要展示的字段配置 (方便后续扩展)
         const fieldConfig = [
