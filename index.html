@@ -1,0 +1,1126 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>数据查询结果展示</title>
+    <style>
+        :root {
+            --primary-color: #4a90e2;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333;
+            --border-color: #e1e4e8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.05);
+            width: 100%;
+            max-width: 600px;
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            background-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .content {
+            padding: 25px;
+        }
+
+        .info-group {
+            margin-bottom: 20px;
+        }
+
+        .info-group:last-child {
+            margin-bottom: 0;
+        }
+
+        .group-title {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 8px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+        }
+
+        .group-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 14px;
+            background-color: var(--primary-color);
+            margin-right: 8px;
+            border-radius: 2px;
+        }
+
+        .data-list {
+            list-style: none;
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 15px;
+        }
+
+        .data-list li {
+            padding: 8px 0;
+            border-bottom: 1px dashed var(--border-color);
+            font-family: monospace;
+            font-size: 1.1rem;
+            color: #2c3e50;
+        }
+
+        .data-list li:last-child {
+            border-bottom: none;
+        }
+
+        /* 首尾负边距抵消 li 的上下留白：单条仍垂直居中，多条则每条上下都留白 */
+        .data-list li:first-child {
+            margin-top: -8px;
+        }
+
+        .data-list li:last-child {
+            margin-bottom: -8px;
+        }
+
+        .item-main {
+            display: block;
+        }
+
+        .item-sub {
+            display: block;
+            margin-top: 3px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        .empty-state {
+            text-align: center;
+            color: #999;
+            padding: 20px 0;
+            font-style: italic;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: var(--primary-color);
+        }
+        
+        /* 简单的加载动画 */
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* 视图切换 */
+        .view {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+        }
+
+        .view.hidden {
+            display: none;
+        }
+
+        .view:not(.hidden) .container {
+            animation: fadeUp 0.3s ease;
+        }
+
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 查询表单 */
+        .search-form {
+            display: flex;
+            gap: 10px;
+        }
+
+        .search-input-group {
+            position: relative;
+            flex: 1;
+        }
+
+        .search-input-group input {
+            width: 100%;
+            padding: 12px 40px 12px 14px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            color: var(--text-color);
+            background-color: #fff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        .search-input-group input::placeholder {
+            color: #aaa;
+        }
+
+        .search-input-group input:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.15);
+        }
+
+        .search-input-group .clear-btn {
+            position: absolute;
+            top: 50%;
+            right: 10px;
+            transform: translateY(-50%);
+            width: 20px;
+            height: 20px;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 50%;
+            background-color: #c8ced6;
+            color: #fff;
+            font-size: 14px;
+            line-height: 1;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .search-input-group.has-value .clear-btn {
+            display: flex;
+        }
+
+        .search-input-group .clear-btn:hover {
+            background-color: #9aa4b2;
+        }
+
+        .query-btn {
+            flex-shrink: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 12px 26px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            font-family: inherit;
+            color: #fff;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background-color 0.2s, box-shadow 0.2s, transform 0.1s;
+        }
+
+        .query-btn:hover {
+            background-color: #3b7dcc;
+            box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+        }
+
+        .query-btn:active {
+            transform: translateY(1px);
+        }
+
+        .search-tip {
+            margin-top: 14px;
+            font-size: 0.8rem;
+            color: #999;
+            text-align: center;
+        }
+
+        /* 结果页返回按钮 */
+        .header {
+            position: relative;
+        }
+
+        .back-btn {
+            position: absolute;
+            left: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 6px 10px;
+            font-size: 0.85rem;
+            font-family: inherit;
+            color: #fff;
+            background-color: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.32);
+        }
+
+        /* 轻量提示 toast（替代浏览器默认 alert） */
+        .toast {
+            position: fixed;
+            top: 24px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-16px);
+            z-index: 1000;
+            padding: 10px 18px;
+            font-size: 0.9rem;
+            color: #fff;
+            background-color: #2c3e50;
+            border-radius: 8px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s, transform 0.25s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* 模式切换圆圈（位于查询按钮右上角） */
+        .query-btn-wrap {
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .mode-toggle {
+            position: absolute;
+            top: 0;
+            right: 0;
+            transform: translate(38%, -38%);
+            z-index: 5;
+            width: 22px;
+            height: 22px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: 2px solid var(--primary-color);
+            border-radius: 50%;
+            background-color: #fff;
+            color: var(--primary-color);
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(74, 144, 226, 0.35);
+            transition: transform 0.25s, color 0.2s, border-color 0.2s;
+        }
+
+        .mode-toggle:hover {
+            transform: translate(38%, -38%) rotate(180deg);
+        }
+
+        .mode-toggle:active {
+            transform: translate(38%, -38%) rotate(180deg) scale(0.92);
+        }
+
+        /* 批量结果容器：在普通结果详情基础上放大 */
+        .container.wide {
+            max-width: 920px;
+        }
+
+        /* 批量查询进度 */
+        .batch-progress {
+            margin-bottom: 20px;
+        }
+
+        .progress-info {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .progress-track {
+            height: 8px;
+            background-color: #edf0f4;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            width: 0;
+            background-color: var(--primary-color);
+            border-radius: 20px;
+            transition: width 0.3s ease;
+        }
+
+        .progress-current {
+            margin-top: 8px;
+            font-size: 0.8rem;
+            color: #999;
+        }
+
+        /* 批量结果卡片 */
+        .batch-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+            gap: 16px;
+        }
+
+        .batch-card {
+            background-color: #f8f9fa;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 18px;
+            transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+        }
+
+        .batch-card.has-data {
+            cursor: pointer;
+        }
+
+        .batch-card.has-data:hover {
+            transform: translateY(-3px);
+            border-color: var(--primary-color);
+            box-shadow: 0 8px 20px rgba(74, 144, 226, 0.15);
+        }
+
+        .bc-number {
+            font-family: monospace;
+            font-size: 1.15rem;
+            color: #2c3e50;
+            word-break: break-all;
+            margin-bottom: 10px;
+        }
+
+        .bc-meta {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            color: #888;
+        }
+
+        .bc-count {
+            display: inline-block;
+            min-width: 24px;
+            text-align: center;
+            padding: 2px 10px;
+            border-radius: 20px;
+            font-weight: 600;
+            background-color: rgba(74, 144, 226, 0.14);
+            color: var(--primary-color);
+        }
+
+        .batch-card.no-data .bc-count {
+            background-color: rgba(149, 165, 166, 0.2);
+            color: #95a5a6;
+        }
+
+        /* 自定义详情弹窗 */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 2000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-color: rgba(44, 62, 80, 0.45);
+            backdrop-filter: blur(2px);
+        }
+
+        .modal-overlay.hidden {
+            display: none;
+        }
+
+        .modal-box {
+            width: 100%;
+            max-width: 640px;
+            max-height: 86vh;
+            display: flex;
+            flex-direction: column;
+            background-color: #fff;
+            border-radius: 14px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.25);
+            animation: modalPop 0.25s ease;
+        }
+
+        @keyframes modalPop {
+            from { opacity: 0; transform: scale(0.95) translateY(10px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .modal-header {
+            position: relative;
+            background-color: var(--primary-color);
+            color: #fff;
+            padding: 18px 56px 18px 22px;
+            flex-shrink: 0;
+        }
+
+        .modal-header h2 {
+            font-size: 1.15rem;
+            word-break: break-all;
+        }
+
+        .modal-header p {
+            margin-top: 4px;
+            font-size: 0.8rem;
+            opacity: 0.85;
+        }
+
+        .modal-close {
+            position: absolute;
+            right: 14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 30px;
+            height: 30px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .modal-close:hover {
+            background-color: rgba(255, 255, 255, 0.35);
+        }
+
+        .modal-body {
+            padding: 22px;
+            overflow-y: auto;
+        }
+
+        /* 响应式适配 */
+        @media (max-width: 480px) {
+            .search-form {
+                flex-direction: column;
+            }
+
+            .query-btn-wrap {
+                width: 100%;
+            }
+
+            .query-btn-wrap .query-btn {
+                width: 100%;
+            }
+
+            .back-btn .back-text {
+                display: none;
+            }
+
+            .batch-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 查询入口：输入关键词后点击查询 -->
+    <div class="view" id="search-view">
+        <div class="container">
+            <div class="header">
+                <h1>信息查询</h1>
+                <span class="status-badge" id="search-badge">单条查询模式</span>
+            </div>
+            <div class="content">
+                <form class="search-form" id="search-form" autocomplete="off">
+                    <div class="search-input-group" id="input-group">
+                        <input type="text" id="query-input" placeholder="请输入要查询的QQ或手机号码">
+                        <button type="button" class="clear-btn" id="clear-btn" title="清空">&times;</button>
+                    </div>
+                    <div class="query-btn-wrap">
+                        <button type="submit" class="query-btn" id="query-btn">
+                            <svg id="btn-icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="11" cy="11" r="8"></circle>
+                                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                            </svg>
+                            <span id="btn-text">查询</span>
+                        </button>
+                        <button type="button" class="mode-toggle" id="mode-toggle" title="切换单条 / 批量查询">
+                            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="17 1 21 5 17 9"></polyline>
+                                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                                <polyline points="7 23 3 19 7 15"></polyline>
+                                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </form>
+                <p class="search-tip">点击「查询」按钮，或在输入框中按回车键发起查询</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 查询结果详情：默认隐藏，点击查询后才显示 -->
+    <div class="view hidden" id="result-view">
+        <div class="container">
+            <div class="header">
+                <button type="button" class="back-btn" id="back-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span class="back-text">返回</span>
+                </button>
+                <h1>查询结果详情</h1>
+                <span id="status-badge" class="status-badge">查询中...</span>
+            </div>
+            <div class="content" id="data-container">
+                <!-- 数据将通过 JS 渲染在这里 -->
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>正在获取数据...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 轻量提示（替代浏览器默认 alert） -->
+    <div class="toast" id="toast"></div>
+
+    <!-- 批量查询结果：放大版结果详情，以卡片呈现每个号码 -->
+    <div class="view hidden" id="batch-view">
+        <div class="container wide">
+            <div class="header">
+                <button type="button" class="back-btn" id="batch-back-btn">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="19" y1="12" x2="5" y2="12"></line>
+                        <polyline points="12 19 5 12 12 5"></polyline>
+                    </svg>
+                    <span class="back-text">返回</span>
+                </button>
+                <h1>批量查询结果</h1>
+                <span id="batch-badge" class="status-badge">准备查询</span>
+            </div>
+            <div class="content" id="batch-container">
+                <!-- 进度与卡片通过 JS 渲染 -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 自定义详情弹窗：点击有数据的卡片后显示完整结果 -->
+    <div class="modal-overlay hidden" id="detail-modal">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h2 id="modal-title">查询详情</h2>
+                <p id="modal-subtitle"></p>
+                <button type="button" class="modal-close" id="modal-close" title="关闭">
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="18" y1="6" x2="6" y2="18"></line>
+                        <line x1="6" y1="6" x2="18" y2="18"></line>
+                    </svg>
+                </button>
+            </div>
+            <div class="modal-body" id="modal-content"></div>
+        </div>
+    </div>
+
+    <script>
+        // 接口配置：本地代理（server.py），其内部转发到 https://detail.aiuys.com/api/query
+        const API_URL = 'http://127.0.0.1:8848/api/query';
+
+        // 定义需要展示的字段配置 (方便后续扩展)
+        const fieldConfig = [
+            { key: 'qq_numbers', label: 'QQ号码' },
+            { key: 'names', label: '姓名' },
+            { key: 'nicknames', label: '昵称' },
+            { key: 'phone_numbers', label: '电话号码', noteMarker: '【' },
+            { key: 'id_numbers', label: '身份证号' },
+            { key: 'wb_numbers', label: '微博账号', separator: '%:|:%' },
+            { key: 'passwords', label: '密码' },
+            { key: 'emails', label: '电子邮箱' },
+            { key: 'addresses', label: '地址' }
+        ];
+
+        // 防止接口内容中的特殊字符破坏 HTML
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text == null ? '' : String(text);
+            return div.innerHTML;
+        }
+
+        // 单条数据格式化
+        // 微博值 "6663273414%:|:%微博用户" 只保留账号，不显示括号昵称
+        function formatItem(field, item) {
+            if (field.separator && String(item).includes(field.separator)) {
+                return String(item).split(field.separator)[0];
+            }
+            return item;
+        }
+
+        // 拆分主值与备注（如电话 "13543128146 【广东汕尾 中国移动】"）
+        function splitItem(field, item) {
+            const value = formatItem(field, item);
+
+            if (field.noteMarker) {
+                const text = String(value);
+                const idx = text.indexOf(field.noteMarker);
+                if (idx !== -1) {
+                    return {
+                        main: text.slice(0, idx).trim(),
+                        note: text.slice(idx).replace(/[【】]/g, '').trim()
+                    };
+                }
+            }
+
+            return { main: value };
+        }
+
+        // DOM 元素
+        const searchView = document.getElementById('search-view');
+        const resultView = document.getElementById('result-view');
+        const batchView = document.getElementById('batch-view');
+        const searchForm = document.getElementById('search-form');
+        const queryInput = document.getElementById('query-input');
+        const inputGroup = document.getElementById('input-group');
+        const clearBtn = document.getElementById('clear-btn');
+        const backBtn = document.getElementById('back-btn');
+        const batchBackBtn = document.getElementById('batch-back-btn');
+        const modeToggle = document.getElementById('mode-toggle');
+        const btnText = document.getElementById('btn-text');
+        const btnIcon = document.getElementById('btn-icon');
+        const searchBadge = document.getElementById('search-badge');
+        const toast = document.getElementById('toast');
+        const batchContainer = document.getElementById('batch-container');
+        const batchBadge = document.getElementById('batch-badge');
+        const detailModal = document.getElementById('detail-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalSubtitle = document.getElementById('modal-subtitle');
+        const modalContent = document.getElementById('modal-content');
+        const modalClose = document.getElementById('modal-close');
+
+        const LOADING_HTML = `
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>正在获取数据...</p>
+            </div>
+        `;
+
+        const ICON_SEARCH = `
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        `;
+
+        const ICON_LAYERS = `
+            <polygon points="12 2 2 7 12 12 22 7 12 2"></polygon>
+            <polyline points="2 17 12 22 22 17"></polyline>
+            <polyline points="2 12 12 17 22 12"></polyline>
+        `;
+
+        let toastTimer = null;
+        let queryMode = 'single';          // single | batch
+        let batchStore = [];               // 批量查询结果缓存
+        let batchRunning = false;
+
+        // 轻量提示（不使用浏览器默认 alert）
+        function showToast(message) {
+            toast.textContent = message;
+            toast.classList.add('show');
+            clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // 切换视图
+        function showView(name) {
+            searchView.classList.toggle('hidden', name !== 'search');
+            resultView.classList.toggle('hidden', name !== 'result');
+            batchView.classList.toggle('hidden', name !== 'batch');
+        }
+
+        // 统计一个结果对象中共有多少条数据
+        function countRecords(resultData) {
+            return fieldConfig.reduce((sum, field) => {
+                const items = resultData[field.key];
+                return sum + (Array.isArray(items) ? items.length : 0);
+            }, 0);
+        }
+
+        // 统计有效数据条数：排除查询号码本身的回显（如 QQ 组里出现的查询号码自身）
+        function countEffectiveRecords(resultData, queryNumber) {
+            const target = String(queryNumber).trim();
+            let count = 0;
+
+            fieldConfig.forEach(field => {
+                const items = resultData[field.key];
+                if (!Array.isArray(items)) {
+                    return;
+                }
+
+                items.forEach(item => {
+                    const { main } = splitItem(field, item);
+                    if (String(main).trim() === target) {
+                        return; // 查询号码本身，不计入
+                    }
+                    count++;
+                });
+            });
+
+            return count;
+        }
+
+        // 构建完整详情 HTML（普通结果页与批量详情弹窗共用）
+        // excludeNumber 传入时，跳过与查询号码本身相同的回显记录
+        function buildDetailHtml(resultData, excludeNumber) {
+            const target = excludeNumber != null ? String(excludeNumber).trim() : null;
+            let htmlContent = '';
+
+            // 遍历配置生成（无数据的字段不显示）
+            fieldConfig.forEach(field => {
+                const items = resultData[field.key];
+
+                if (!items || items.length === 0) {
+                    return;
+                }
+
+                const rows = items
+                    .filter(item => {
+                        if (target == null) {
+                            return true;
+                        }
+                        return String(splitItem(field, item).main).trim() !== target;
+                    })
+                    .map(item => {
+                        const { main, note } = splitItem(field, item);
+                        return `<li>
+                            <span class="item-main">${escapeHtml(main)}</span>
+                            ${note ? `<span class="item-sub">${escapeHtml(note)}</span>` : ''}
+                        </li>`;
+                    });
+
+                if (rows.length === 0) {
+                    return;
+                }
+
+                htmlContent += `
+                    <div class="info-group">
+                        <div class="group-title">${field.label}</div>
+                        <ul class="data-list">
+                            ${rows.join('')}
+                        </ul>
+                    </div>
+                `;
+            });
+
+            if (!htmlContent) {
+                htmlContent = '<div class="empty-state">未查询到相关数据</div>';
+            }
+
+            return htmlContent;
+        }
+
+        // 渲染单条查询结果页
+        function renderPage(data) {
+            const container = document.getElementById('data-container');
+            const statusBadge = document.getElementById('status-badge');
+            const resultData = data.data || {};
+            const count = countRecords(resultData);
+
+            if (data.code === 0 && count > 0) {
+                statusBadge.textContent = '查询成功';
+                statusBadge.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+            } else if (data.code === 0) {
+                statusBadge.textContent = '暂无数据';
+                statusBadge.style.backgroundColor = 'rgba(149, 165, 166, 0.25)';
+            } else {
+                statusBadge.textContent = '查询异常';
+                statusBadge.style.backgroundColor = 'rgba(231, 76, 60, 0.2)';
+            }
+
+            container.innerHTML = buildDetailHtml(resultData);
+        }
+
+        // 单次接口请求，返回解析后的 JSON；失败时抛出异常
+        async function requestQuery(value) {
+            const response = await fetch(`${API_URL}?value=${encodeURIComponent(value)}`);
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}`);
+            }
+            return response.json();
+        }
+
+        // 单条查询
+        async function fetchData(keyword) {
+            const container = document.getElementById('data-container');
+            const statusBadge = document.getElementById('status-badge');
+
+            container.innerHTML = LOADING_HTML;
+            statusBadge.textContent = `正在查询：${keyword}`;
+            statusBadge.style.backgroundColor = '';
+
+            try {
+                const jsonData = await requestQuery(keyword);
+                renderPage(jsonData);
+            } catch (error) {
+                console.error('获取数据失败:', error);
+                statusBadge.textContent = '查询失败';
+                statusBadge.style.backgroundColor = 'rgba(231, 76, 60, 0.2)';
+                container.innerHTML = '<div class="empty-state">查询失败，请确认本地服务已启动：python server.py</div>';
+                showToast('查询失败，请确认本地服务已启动');
+            }
+        }
+
+        // 切换单条 / 批量查询模式
+        function toggleMode() {
+            queryMode = queryMode === 'single' ? 'batch' : 'single';
+            const isBatch = queryMode === 'batch';
+
+            // 切换后清空输入框并同步清空按钮状态
+            queryInput.value = '';
+            syncClearBtn();
+
+            btnText.textContent = isBatch ? '批量查询' : '查询';
+            btnIcon.innerHTML = isBatch ? ICON_LAYERS : ICON_SEARCH;
+            queryInput.placeholder = isBatch
+                ? '多个号码请使用英文逗号 , 隔开'
+                : '请输入要查询的QQ或手机号码';
+            searchBadge.textContent = isBatch ? '批量查询模式' : '单条查询模式';
+            document.querySelector('.search-tip').textContent = isBatch
+                ? '批量模式：输入多个号码，使用英文逗号 , 隔开后点击「批量查询」'
+                : '点击「查询」按钮，或在输入框中按回车键发起查询';
+
+            showToast(isBatch ? '已切换为批量查询模式' : '已切换为单条查询模式');
+            queryInput.focus();
+        }
+
+        // 渲染批量查询页（进度 + 已完成的卡片）
+        function renderBatch(doneCount, currentNumber) {
+            const total = batchStore.length;
+            const percent = total ? Math.round((doneCount / total) * 100) : 0;
+
+            let html = `
+                <div class="batch-progress">
+                    <div class="progress-info">
+                        <span>查询进度</span>
+                        <span>${doneCount} / ${total}（${percent}%）</span>
+                    </div>
+                    <div class="progress-track">
+                        <div class="progress-fill" style="width:${percent}%"></div>
+                    </div>
+                    ${batchRunning ? `<div class="progress-current">正在查询：${escapeHtml(currentNumber)}</div>` : ''}
+                </div>
+                <div class="batch-grid">
+            `;
+
+            batchStore.forEach((item, index) => {
+                if (!item.done) {
+                    return;
+                }
+
+                html += `
+                    <div class="batch-card ${item.count > 0 ? 'has-data' : 'no-data'}" data-index="${index}">
+                        <div class="bc-number">${escapeHtml(item.number)}</div>
+                        <div class="bc-meta">
+                            ${item.count > 0
+                                ? `<span>存在 <span class="bc-count">${item.count}</span> 条数据</span><span>点击查看</span>`
+                                : '<span>未查询到相关数据</span>'
+                            }
+                        </div>
+                    </div>
+                `;
+            });
+
+            html += '</div>';
+            batchContainer.innerHTML = html;
+        }
+
+        // 批量查询：逐个号码请求
+        async function runBatch(numbers) {
+            batchRunning = true;
+            batchStore = numbers.map(number => ({
+                number,
+                done: false,
+                data: {},
+                count: 0
+            }));
+
+            batchBadge.textContent = '正在批量查询...';
+            batchBadge.style.backgroundColor = '';
+            renderBatch(0, numbers[0]);
+
+            let successCount = 0;
+
+            for (let i = 0; i < batchStore.length; i++) {
+                const item = batchStore[i];
+                try {
+                    const json = await requestQuery(item.number);
+                    item.data = json.data || {};
+                    // 条数减去查询号码本身的回显（仅自身时计为 0）
+                    item.count = json.code === 0 ? countEffectiveRecords(item.data, item.number) : 0;
+                } catch (error) {
+                    console.error(`查询 ${item.number} 失败:`, error);
+                    item.data = {};
+                    item.count = 0;
+                }
+
+                item.done = true;
+                if (item.count > 0) {
+                    successCount++;
+                }
+
+                renderBatch(i + 1, numbers[i + 1] || '');
+            }
+
+            batchRunning = false;
+            if (successCount > 0) {
+                batchBadge.textContent = `批量查询完成：${successCount}/${numbers.length} 个号码有数据`;
+                batchBadge.style.backgroundColor = 'rgba(46, 204, 113, 0.2)';
+            } else {
+                batchBadge.textContent = '批量查询完成：均无数据';
+                batchBadge.style.backgroundColor = 'rgba(149, 165, 166, 0.25)';
+            }
+
+            // 最终再渲染一次（去掉"正在查询"行）
+            renderBatch(batchStore.length, '');
+        }
+
+        // 打开详情弹窗
+        function openDetailModal(index) {
+            const item = batchStore[index];
+            if (!item || item.count === 0) {
+                return;
+            }
+
+            modalTitle.textContent = item.number;
+            modalSubtitle.textContent = `该号码存在 ${item.count} 条数据`;
+            modalContent.innerHTML = buildDetailHtml(item.data, item.number);
+            detailModal.classList.remove('hidden');
+        }
+
+        // 关闭详情弹窗
+        function closeDetailModal() {
+            detailModal.classList.add('hidden');
+        }
+
+        // 发起查询（点击按钮或按回车，均触发 form submit）
+        function handleSearch(event) {
+            event.preventDefault();
+            const raw = queryInput.value.trim();
+
+            if (!raw) {
+                showToast(queryMode === 'batch' ? '请输入需要查询的号码' : '请输入查询关键词');
+                queryInput.focus();
+                return;
+            }
+
+            if (queryMode === 'batch') {
+                // 按英文逗号拆分（兼容中文逗号），去空白、去重
+                const numbers = [...new Set(
+                    raw.split(/[,，]/).map(value => value.trim()).filter(Boolean)
+                )];
+
+                if (numbers.length === 0) {
+                    showToast('请输入需要查询的号码');
+                    queryInput.focus();
+                    return;
+                }
+
+                showView('batch');
+                runBatch(numbers);
+                return;
+            }
+
+            showView('result');
+            fetchData(raw);
+        }
+
+        // 返回查询页
+        function backToSearch() {
+            showView('search');
+            queryInput.focus();
+        }
+
+        // 根据输入内容同步清空按钮的显示状态
+        function syncClearBtn() {
+            inputGroup.classList.toggle('has-value', queryInput.value.length > 0);
+        }
+
+        // 事件绑定
+        searchForm.addEventListener('submit', handleSearch);
+        clearBtn.addEventListener('click', () => {
+            queryInput.value = '';
+            syncClearBtn();
+            queryInput.focus();
+        });
+        queryInput.addEventListener('input', syncClearBtn);
+        backBtn.addEventListener('click', backToSearch);
+        batchBackBtn.addEventListener('click', backToSearch);
+        modeToggle.addEventListener('click', toggleMode);
+
+        // 卡片点击（事件委托，只对有数据的卡片生效）
+        batchContainer.addEventListener('click', event => {
+            const card = event.target.closest('.batch-card.has-data');
+            if (card) {
+                openDetailModal(Number(card.dataset.index));
+            }
+        });
+
+        // 弹窗关闭：关闭按钮 / 点击遮罩 / ESC 键
+        modalClose.addEventListener('click', closeDetailModal);
+        detailModal.addEventListener('click', event => {
+            if (event.target === detailModal) {
+                closeDetailModal();
+            }
+        });
+        document.addEventListener('keydown', event => {
+            if (event.key === 'Escape' && !detailModal.classList.contains('hidden')) {
+                closeDetailModal();
+            }
+        });
+
+        // 页面加载完成后聚焦输入框（不自动查询）
+        window.addEventListener('DOMContentLoaded', () => {
+            syncClearBtn();
+            queryInput.focus();
+        });
+
+    </script>
+</body>
+</html>
